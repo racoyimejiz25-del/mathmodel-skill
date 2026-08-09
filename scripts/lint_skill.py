@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""Validate active HSK graph, result contracts, code quality, semantics and generated files."""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any, Iterable
+
+import yaml
+from jsonschema import Draft202012Validator
+
+ROOT = Path(__file__).resolve().parent.parent
+PACKAGE_VERSION = "7.0.0"
+REQUIRED = [
+    "SKILL.md", "README.md", "REPOSITORY_INDEX.md", "SKILL_CHANGE_GOVERNANCE.md", "CHANGELOG.md",
+    "CHANGELOG_V634.md", "CHANGELOG_V633.md", "CHANGELOG_V632.md", "CHANGELOG_V630.md",
+    "PROJECT_INSTRUCTIONS.md", "RUNTIME_ROUTER.md", "SKILL_FILE_INDEX.md", "TEMPLATE_INDEX.md",
+    "PROJECT_INSTRUCTIONS_HSK_V622.md", "HSK_RUNTIME_ROUTER_V622.md",
+    "HSK_SKILL_FILE_INDEX_V622.md", "HSK_TEMPLATE_INDEX_V622.md",
+    "core/bootstrap.yaml", "core/hsk_core_policy.md", "core/task_taxonomy.yaml",
+    "core/workflow_router.yaml", "core/module_manifest.yaml", "core/output_contract.yaml",
+    "core/workbook_schema.yaml", "core/project_state.schema.yaml", "core/compile_profiles.yaml",
+    "core/user_execution_contract.yaml", "core/code_quality_contract.yaml",
+    "modules/01_problem_audit.md", "modules/02_model_design.md", "modules/03_solve_validate.md",
+    "modules/03_result_analysis.md", "modules/04_figure_evidence.md", "modules/05_latex_compile_quality.md",
+    "modules/05_writing/docx.md", "modules/05_writing/latex.md",
+    "modules/05_writing/ai_cleanup.md", "modules/06_review_delivery.md",
+    "packs/task/classifier.md", "packs/task/advanced_method_gate.md",
+    "packs/artifact/proposition_proof.md", "templates/model/model_paper_framework.md",
+    "templates/code/hsk_pipeline/result_io.py", "templates/code/hsk_pipeline/workbook_validation.py",
+    "templates/code/hsk_pipeline/main_pipeline.py", "templates/matlab/q1_plot.m",
+    "scripts/resolve_workflow.py", "scripts/sync_project.py",
+    "scripts/validate_code_delivery.py", "scripts/validate_user_execution.py",
+    "scripts/validate_model_paper_framework.py", "scripts/validate_project_state.py",
+    "scripts/score_submission.py", ".github/pull_request_template.md",
+    ".github/workflows/ci.yml", ".github/workflows/refresh-generated.yml",
+    "LICENSE", "THIRD_PARTY_NOTICES.md",
+]
+ACTIVE_DIRS = ["core", "modules", "packs", "templates", "scripts", "config", "state", "assets", "agents", "skills", ".codex-plugin", ".github"]
+TEXT_SUFFIXES = {".md", ".yaml", ".yml", ".json", ".py", ".m", ".tex", ".bib"}
+VERSION_DOCS = ["SKILL.md", "README.md", "CHANGELOG.md"]
+VERSION_CONTRACTS = [
+    "core/bootstrap.yaml", "core/workflow_router.yaml", "core/module_manifest.yaml",
+    "core/output_contract.yaml", "core/project_state.schema.yaml", "core/user_execution_contract.yaml",
+    "core/code_quality_contract.yaml",
+]
+
+
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8-sig", errors="strict")
+
+
+def load_structured(path: Path) -> Any:
+    return json.loads(read_text(path)) if path.suffix == ".json" else yaml.safe_load(read_text(path))
+
+
+def load_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def active_files() -> Iterable[Path]:
+    for top in ACTIVE_DIRS:
+        base = ROOT / top
+        if base.exists():
+            yield from (path for path in base.rglob("*") if path.is_file() and path.suffix.lower() in TEXT_SUFFIXES)
+
+
+def check_required(errors: list[str]) -> None:
+    for relative in REQUIRED:
+        if not (ROOT / relative).is_file():
+            errors.append(f"missing required: {relative}")
+
+
+def check_versions(errors: list[str]) -> None:
+    for relative in VERSION_DOCS:
+        if PACKAGE_VERSION not in read_text(ROOT / relative):
+            errors.append(f"version marker missing: {relative}")
+    for relative in VERSION_CONTRACTS:
+        payload = load_structured(ROOT / relative) or {}
+        value = payload.get("skill_version", payload.get("version"))
+        if str(value) != PACKAGE_VERSION:
+            errors.append(f"version mismatch: {relative} -> {value}")
+    plugin = load_structured(ROOT / ".codex-plugin/plugin.json") or {}
+    if plugin.get("version") != PACKAGE_VERSION:
+        errors.append("plugin version mismatch")
+    workbook = load_structured(ROOT / "core/workbook_schema.yaml") or {}
+    if workbook.get("schema_version") != "2.2.1":
+        errors.append("workbook schema version must be 2.2.1")
+    compatibility = str(workbook.get("skill_compatibility", ""))
+    if ">=6.3.2" not in compatibility or "<8.0.0" not in compatibility:
+        errors.append("workbook schema compatibility must cover 6.3.2 through v7")
+
+
+def check_bootstrap_and_governance(errors: list[str]) -> None:
+    data = load_structured(ROOT / "core/bootstrap.yaml") or {}
+    for key, path in (data.get("authoritative_sources", {}) or {}).items():
+        if not path or not (ROOT / path).is_file():
+            errors.append(f"bootstrap authoritative source missing: {key} -> {path}")
+    if data.get("authoritative_sources", {}).get("code_quality") != "core/code_quality_contract.yaml":
+        errors.append("bootstrap must declare code-quality authority")
+    if data.get("entrypoints", {}).get("sync") != "python scripts/sync_project.py":
+        errors.append("bootstrap must expose sync_project.py")
+    maintenance = data.get("repository_maintenance", {})
+    expected = {
+        "governance": "SKILL_CHANGE_GOVERNANCE.md",
+        "mandatory_before_write": True,
+        "read_from_ref": "main",
+        "direct_main_write_allowed": False,
+    }
+    for key, value in expected.items():
+        if maintenance.get(key) != value:
+            errors.append(f"repository maintenance mismatch: {key}")
+    governance = read_text(ROOT / "SKILL_CHANGE_GOVERNANCE.md")
+    for token in ("每个新聊天的强制启动顺序", "修改简报", "单一事实源", "一次聊天一个分支", "一个 PR 一个主题", "禁止直接写 main", "生成文件规则", "测试与验收", "完成报告"):
+        if token not in governance:
+            errors.append(f"governance document lacks section: {token}")
+    if '<8.0.0' not in governance:
+        errors.append("governance applicability must include v7")
+
+
+def check_taxonomy(errors: list[str]) -> None:
+    data = load_structured(ROOT / "core/task_taxonomy.yaml") or {}
+    required_objectives = {"explanation", "inference", "prediction", "evaluation", "optimization", "simulation"}
+    if required_objectives - set(data.get("objectives", {})):
+        errors.append("task taxonomy lacks required objectives")
+    required_capabilities = {"requires_out_of_sample_validation", "requires_uncertainty_quantification", "requires_leakage_check", "requires_calibration_check", "requires_identifiability_check"}
+    if required_capabilities - set(data.get("capabilities", {})):
+        errors.append("task taxonomy lacks required validation capabilities")
+    if data.get("classification_contract", {}).get("authoritative_locations", {}).get("capabilities") != "subproblem.capabilities":
+        errors.append("taxonomy must declare top-level capabilities as authoritative")
+
+
+def check_router(errors: list[str]) -> None:
+    router = load_structured(ROOT / "core/workflow_router.yaml") or {}
+    routes = router.get("routing", {})
+    order = router.get("execution_contract", {}).get("workflow_order", [])
+    for name in ("solve_validate", "result_analysis", "figure_evidence"):
+        if name not in order:
+            errors.append(f"workflow order lacks: {name}")
+    if all(name in order for name in ("solve_validate", "result_analysis", "figure_evidence")):
+        if not order.index("solve_validate") < order.index("result_analysis") < order.index("figure_evidence"):
+            errors.append("workflow must place result_analysis between solve and figures")
+    if router.get("execution_contract", {}).get("formal_delivery_gates") != ["project_sync"]:
+        errors.append("formal delivery must declare project_sync gate")
+    full = routes.get("full_workflow", {})
+    loaded = list(full.get("load", [])) + list(full.get("then", []))
+    if full.get("pause_for_user_execution") is not True:
+        errors.append("full_workflow must pause at the user execution gate")
+    if full.get("delivery_scope") != "code" or full.get("pre_delivery_gates") != ["code_delivery"]:
+        errors.append("full_workflow initial segment must use the code-delivery gate")
+    if "modules/03_solve_validate.md" not in loaded:
+        errors.append("full_workflow initial segment must load primary solve code generation")
+    if any(item in loaded for item in ("modules/03_result_analysis.md", "modules/04_figure_evidence.md", "modules/05_writing/latex.md")):
+        errors.append("full_workflow must not cross a user execution gate in its initial segment")
+    if "modules/05_writing/docx.md" in loaded:
+        errors.append("default full_workflow must not load DOCX")
+    if router.get("execution_contract", {}).get("task_code_execution_allowed") is not False:
+        errors.append("router must forbid assistant task-code execution")
+    analysis_route = routes.get("result_analysis", {})
+    if "modules/03_result_analysis.md" not in analysis_route.get("load", []):
+        errors.append("result_analysis route must load the dedicated module")
+    if "result_analysis_code" not in analysis_route.get("terminal_outputs", []):
+        errors.append("result_analysis route must deliver independent analysis code")
+    validation_route = routes.get("validation", {})
+    if "modules/03_result_analysis.md" not in validation_route.get("load", []):
+        errors.append("validation route must use result-analysis module")
+    explicit_docx = routes.get("docx", {})
+    if explicit_docx.get("delivery_scope") != "docx" or "modules/05_writing/docx.md" not in explicit_docx.get("load", []):
+        errors.append("explicit DOCX route must remain available")
+    resolver = read_text(ROOT / "scripts/resolve_workflow.py")
+    for token in ("pre_delivery_gates", "available_after_modules", "available_after_plan", "gate_plan"):
+        if token not in resolver:
+            errors.append(f"resolver lacks gate-closure token: {token}")
+
+
+def check_manifest(errors: list[str]) -> None:
+    manifest = load_structured(ROOT / "core/module_manifest.yaml") or {}
+    catalog = set(manifest.get("artifact_catalog", {}))
+    external = set(manifest.get("external_artifacts", []))
+    known = catalog | external
+    if manifest.get("contracts", {}).get("code_quality") != "core/code_quality_contract.yaml":
+        errors.append("manifest must register code-quality contract")
+    modules = manifest.get("modules", {})
+    order = manifest.get("workflow_order", [])
+    rank = {name: index for index, name in enumerate(order)}
+    producers: dict[str, list[str]] = {}
+    for name, spec in modules.items():
+        path = spec.get("path")
+        if not path or not (ROOT / path).is_file():
+            errors.append(f"module path missing: {name} -> {path}")
+        for field in ("inputs", "outputs"):
+            unknown = set(spec.get(field, [])) - known
+            if unknown:
+                errors.append(f"module {name} has uncatalogued {field}: {sorted(unknown)}")
+        for output in spec.get("outputs", []):
+            producers.setdefault(output, []).append(name)
+    for gate_name, gate in (manifest.get("utility_gates", {}) or {}).items():
+        for output in gate.get("outputs", []):
+            producers.setdefault(output, []).append(f"gate:{gate_name}")
+    for name, spec in modules.items():
+        for artifact in spec.get("inputs", []):
+            if artifact in external:
+                continue
+            upstream = [
+                producer for producer in producers.get(artifact, [])
+                if producer.startswith("gate:") or rank.get(producer, 999) < rank.get(name, 999)
+            ]
+            if not upstream:
+                errors.append(f"module input lacks upstream producer: {name}:{artifact}")
+    if "result_analysis" not in modules:
+        errors.append("manifest lacks dedicated result_analysis module")
+    else:
+        inputs = set(modules["result_analysis"].get("inputs", []))
+        outputs = set(modules["result_analysis"].get("outputs", []))
+        if not {"accepted_solution_workbook", "result_quality_report", "code_quality_contract"}.issubset(inputs):
+            errors.append("result_analysis must depend on accepted primary evidence and code-quality contract")
+        if "result_analysis_code" not in outputs:
+            errors.append("result_analysis must produce independent result_analysis_code")
+    solve_inputs = set(modules.get("solve_validate", {}).get("inputs", []))
+    if "code_quality_contract" not in solve_inputs:
+        errors.append("solve_validate must consume code-quality contract")
+    profile_spec = manifest.get("workflow_profiles", {}).get("full_workflow", {})
+    profile = profile_spec.get("modules", [])
+    if profile != ["problem_audit", "model_design", "solve_validate"]:
+        errors.append("full_workflow initial manifest profile must stop at solve_validate")
+    if profile_spec.get("pre_delivery_gates") != ["code_delivery"]:
+        errors.append("full_workflow initial manifest profile must use code_delivery")
+    gate = manifest.get("utility_gates", {}).get("project_sync", {})
+    if gate.get("stage_requirements_source") != "core/output_contract.yaml#project_sync.stage_requirements":
+        errors.append("project_sync must reference output-contract stage requirements")
+    code_gate = manifest.get("utility_gates", {}).get("code_delivery", {})
+    if "code_quality_contract" not in code_gate.get("inputs", []):
+        errors.append("code-delivery gate must consume code-quality contract")
+
+
+def check_contracts(errors: list[str]) -> None:
+    output = load_structured(ROOT / "core/output_contract.yaml") or {}
+    quality = load_structured(ROOT / "core/code_quality_contract.yaml") or {}
+    user_execution = load_structured(ROOT / "core/user_execution_contract.yaml") or {}
+    line_policy = quality.get("line_count", {})
+    if (line_policy.get("target_max"), line_policy.get("hard_max"), line_policy.get("exemption_max")) != (500, 700, 900):
+        errors.append("code-quality line thresholds must be 500/700/900")
+    if quality.get("function_size", {}).get("hard_max") != 120:
+        errors.append("code-quality function hard limit must be 120")
+    if quality.get("parameter_count", {}).get("hard_max") != 12:
+        errors.append("code-quality parameter hard limit must be 12")
+    scopes = quality.get("scope", [])
+    if not isinstance(scopes, list) or "问题X求解/问题X结果深化分析.py" not in scopes:
+        errors.append("code-quality contract must cover independent analysis script")
+    if output.get("code_quality_contract") != "core/code_quality_contract.yaml":
+        errors.append("output contract must reference code-quality contract")
+    policy = output.get("writing_policy", {})
+    if policy.get("default_mode") != "latex_first":
+        errors.append("default writing mode must be latex_first")
+    if policy.get("docx_mode") != "explicit_only_independent" or policy.get("docx_is_latex_prerequisite") is not False:
+        errors.append("DOCX must remain explicit-only and not be a LaTeX prerequisite")
+    result_policy = output.get("result_policy", {})
+    if result_policy.get("primary_quality_gate_required") is not True:
+        errors.append("primary result quality gate must be required")
+    if result_policy.get("fixed_perturbation_forbidden") is not True:
+        errors.append("fixed perturbation must be forbidden")
+    per_question = output.get("per_question", {}) or {}
+    expected_files = [
+        "问题{中文序号}求解.py", "问题{中文序号}求解结果.xlsx",
+        "问题{中文序号}结果深化分析.py", "问题{中文序号}结果深化分析.xlsx",
+        "q{阿拉伯序号}_plot.m",
+    ]
+    if per_question.get("exact_default_files") != expected_files:
+        errors.append("per-question default must be exact five-file two-script layout")
+    if "single_python_update_policy" in per_question:
+        errors.append("output contract must not restore single-script overwrite policy")
+    stages = ((user_execution.get("code_delivery") or {}).get("stage_scripts") or {})
+    if stages.get("primary") != "问题X求解/问题X求解.py" or stages.get("analysis") != "问题X求解/问题X结果深化分析.py":
+        errors.append("user execution contract must define separate primary/analysis scripts")
+    forbidden = set(((user_execution.get("code_delivery") or {}).get("standalone_files_forbidden_by_default") or []))
+    if "问题X结果深化分析.py" in forbidden:
+        errors.append("analysis script must not be forbidden")
+    sync = output.get("project_sync", {})
+    expected_scopes = {"design", "code", "results", "figures", "docx", "latex", "submission"}
+    requirements = sync.get("stage_requirements", {}) or {}
+    if set(requirements) != expected_scopes or any(not isinstance(value, list) or not value for value in requirements.values()):
+        errors.append("output contract must define every exact delivery scope")
+    if "result_analysis_code" not in requirements.get("results", []):
+        errors.append("results scope must require independent result-analysis code")
+    if sync.get("stage_requirements_semantics") != "exact_scope":
+        errors.append("project_sync stage requirements must use exact_scope semantics")
+    expected_layers = {"data", "model", "solution_workbook", "result_analysis_workbook", "matlab_script", "figure_bundle", "framework"}
+    if set(sync.get("artifact_hash_layers", [])) != expected_layers:
+        errors.append("project_sync artifact hash layers are incomplete")
+    sync_text = read_text(ROOT / "scripts/sync_project.py")
+    for token in ("stage_requirements(scope, output_contract)", "contract_preflight_issues", "_code_hash_mismatches", "analysis_code_sha256", "result_analysis_code"):
+        if token not in sync_text:
+            errors.append(f"sync_project lacks two-stage gate token: {token}")
+    workbook = load_structured(ROOT / "core/workbook_schema.yaml") or {}
+    runtime = workbook.get("runtime_enforcement", {}) or {}
+    if "artifact_checker" in runtime:
+        errors.append("workbook schema still references removed artifact_checker")
+    for key in ("code_delivery_checker", "returned_workbook_checker", "project_sync", "shared_validator"):
+        value = runtime.get(key)
+        if not value or not (ROOT / value).is_file():
+            errors.append(f"workbook runtime checker missing: {key} -> {value}")
+    handoff = workbook.get("matlab_handoff", {}).get("evidence_chain", {}) or {}
+    if handoff.get("declared_export_must_exist") is not False:
+        errors.append("workbook MATLAB handoff must not require exported figures by default")
+    if handoff.get("independent_evidence_file_default") is not False:
+        errors.append("workbook MATLAB handoff must not default to an independent evidence file")
+    if "figure_evidence.yaml" in str(handoff.get("provenance_record", "")):
+        errors.append("workbook MATLAB handoff must not default to figure_evidence.yaml")
+    if workbook.get("global_rules", {}).get("empty_worksheet_allowed") is not False:
+        errors.append("workbook schema must forbid empty worksheets")
+    if "主结果质量门" not in workbook.get("solution_workbook", {}).get("common_required_sheets", {}):
+        errors.append("solution workbook must persist the quality gate")
+    analysis = workbook.get("result_analysis_workbook", {})
+    if not {"分析设计", "结论稳定性汇总"}.issubset(analysis.get("common_required_sheets", {})):
+        errors.append("result-analysis workbook lacks required plan/report sheets")
+    if "适用性说明" in analysis.get("sheet_schemas", {}):
+        errors.append("result-analysis workbook must not use applicability placeholders")
+
+
+def check_project_state_and_framework(errors: list[str]) -> None:
+    schema = load_structured(ROOT / "core/project_state.schema.yaml")
+    Draft202012Validator.check_schema(schema)
+    example = load_structured(ROOT / "state/project_state.example.yaml")
+    for violation in Draft202012Validator(schema).iter_errors(example):
+        location = "/".join(map(str, violation.path)) or "<root>"
+        errors.append(f"project state example violates schema at {location}: {violation.message}")
+    subproblem = schema["properties"]["subproblems"]["additionalProperties"]
+    required = set(subproblem.get("required", []))
+    if not {"capabilities", "result_quality_status", "result_analysis_status"}.issubset(required):
+        errors.append("project state must require split quality/analysis statuses")
+    fields = subproblem.get("properties", {})
+    if not {"code", "result_analysis_code", "primary_code_sha256", "analysis_code_sha256"}.issubset(fields):
+        errors.append("project state must expose both stage-specific code paths and hashes")
+    phases = set(schema["properties"]["project"]["properties"]["current_phase"]["enum"])
+    if "result_analysis" not in phases:
+        errors.append("project state phases lack result_analysis")
+    state_validator = load_module("lint_state_validator", ROOT / "scripts/validate_project_state.py")
+    for issue in state_validator.validate_state_payload(example, project_root=ROOT):
+        errors.append(f"project state semantic violation: {issue}")
+    framework_validator = load_module("lint_framework_validator", ROOT / "scripts/validate_model_paper_framework.py")
+    compact = "# 模型论文框架\n只保留当前有效版本\n## 当前有效口径\n## 各问模型与结果\n## 图表证据链\n## 待办与缺口\n"
+    full_text = compact + "## 论文整体框架\n### 命题与证明规划\n全文命题上限：4\n当前计划命题数：0\n## 综合检验与跨问结论\n## 同步检查\n"
+    if framework_validator.validate_framework_text(compact, mode="compact"):
+        errors.append("minimal compact framework must pass")
+    if framework_validator.validate_framework_text(full_text, mode="full"):
+        errors.append("minimal full framework must pass")
+
+
+def check_templates(errors: list[str]) -> None:
+    pipeline = read_text(ROOT / "templates/code/hsk_pipeline/main_pipeline.py")
+    for token in ("def run_primary_pipeline(", "def run_result_analysis_pipeline(", "assert_primary_quality", "主结果质量门", "分析设计", "结论稳定性汇总"):
+        if token not in pipeline:
+            errors.append(f"main pipeline lacks token: {token}")
+    reader = read_text(ROOT / "templates/matlab/hsk_read_result_workbooks.m")
+    for token in ("结果深化分析.xlsx", "books.analysis", "fixedColumns", "expectedHeaders"):
+        if token not in reader:
+            errors.append(f"MATLAB reader lacks token: {token}")
+    plot = read_text(ROOT / "templates/matlab/q1_plot.m")
+    for token in ("exact_header_column", "headers ==", "warn_position_drift", "title(ax, figureTitle"):
+        if token not in plot:
+            errors.append(f"q1_plot.m lacks required token: {token}")
+    validator = read_text(ROOT / "scripts/validate_code_delivery.py")
+    for token in ("QUALITY_CONTRACT", "code_quality_findings", "nonblank_lines", "forbidden_import_roots", "结果深化分析.py", "result_analysis_code"):
+        if token not in validator:
+            errors.append(f"code delivery validator lacks quality/two-stage token: {token}")
+    solve = read_text(ROOT / "modules/03_solve_validate.md")
+    analysis = read_text(ROOT / "modules/03_result_analysis.md")
+    if "冻结问题X求解.py" not in solve or "问题X结果深化分析.py" not in analysis:
+        errors.append("solve/result-analysis modules must enforce frozen primary and separate analysis script")
+    for relative in ("SKILL.md", "README.md", "skills/mathmodel-skill/SKILL.md"):
+        text = read_text(ROOT / relative)
+        if "└─ 图表/" in text or "输出完整版代码、运行配置和说明" in text:
+            errors.append(f"active entry still contains obsolete output wording: {relative}")
+        if "问题X结果深化分析.py" not in text:
+            errors.append(f"active entry lacks independent analysis script: {relative}")
+    removed_checker = "hsk_check_" + "artifact.py"
+    lint_path = ROOT / "scripts/lint_skill.py"
+    for path in active_files():
+        if path == lint_path:
+            continue
+        if removed_checker in read_text(path):
+            errors.append(f"active file references removed artifact checker: {path.relative_to(ROOT)}")
+
+
+def check_syntax(errors: list[str]) -> None:
+    for path in active_files():
+        try:
+            if path.suffix.lower() in {".yaml", ".yml", ".json"}:
+                load_structured(path)
+            elif path.suffix.lower() == ".py":
+                compile(read_text(path), str(path), "exec")
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"cannot parse {path.relative_to(ROOT)}: {exc}")
+
+
+def check_generated(errors: list[str]) -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/generate_indexes.py"), "--check"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode:
+        errors.append(f"generated indexes or MANIFEST are stale: {(result.stdout + result.stderr).strip()}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--skip-generated", action="store_true")
+    args = parser.parse_args()
+    errors: list[str] = []
+    checks = (
+        check_required, check_versions, check_bootstrap_and_governance, check_taxonomy,
+        check_router, check_manifest, check_contracts, check_project_state_and_framework,
+        check_templates, check_syntax,
+    )
+    for check in checks:
+        try:
+            check(errors)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{check.__name__} failed: {exc}")
+    if not args.skip_generated:
+        check_generated(errors)
+    if errors:
+        print("HSK skill lint failed:")
+        for item in sorted(set(errors)):
+            print("-", item)
+        return 1
+    print("HSK skill lint passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
