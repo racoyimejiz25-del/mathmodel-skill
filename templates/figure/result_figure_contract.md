@@ -24,6 +24,13 @@
 | Scientific Rendering Profile | Distribution / Regression-Prediction / Dynamic / Parameter Surface / Spatial / Optimization-Pareto / High-density Scatter / custom |
 | Palette profile | `competition_high_contrast / journal_balanced / monochrome_print / custom`；profile 只是起点，具体规则服从 Module 04 Publication Rendering Grammar |
 | Color semantics | 记录主对象、对照、基准、风险/失效、推荐方案、CI/区间、背景或参考元素各自承担的颜色语义；同一对象和同一方向性语义全文保持一致 |
+| Line style profile | `competition_clean / journal_competition_hybrid / decision_highlight / dense_scientific / technical_monochrome / custom`；默认 `journal_competition_hybrid`，只负责渲染，不改变证据与正文准入 |
+| Line role map | 将折线/直线声明为 `FOCUS / COMPARISON / CONTEXT / REFERENCE / THRESHOLD_BOUNDARY / FIT_MODEL / UNCERTAINTY_BOUNDARY`；不得所有线默认同粗、同饱和、同线型 |
+| Line visual semantics | 优先按 `Color=对象/指标`、`LineStyle=场景/状态`、`LineWidth=重要程度`、`Marker=真实离散/关键点`、`Band=真实区间/阶段` 分工；无真实语义的通道留空 |
+| Marker policy | 说明是否需要 marker、marker 是否对应真实离散采样或关键点；密集连续曲线默认不把每个点都画成 marker |
+| Smoothing / interpolation policy | 说明是否保持真实折线或使用合法连续模型/已验收平滑；禁止为了圆润用 spline / Bezier 制造新峰谷、拐点或阈值交点 |
+| Uncertainty band / boundary policy | CI / prediction interval / quantile 等优先判断是否应以低权重 band 表达；只有上下界本身有独立物理/可行性含义时才作为正式边界线强调 |
+| Line final-size QA | 按论文预计插入宽度检查主次线宽、dash、marker、reference/grid、band、灰度/色觉可读性和最细线导出后是否仍清楚；详细参考 `templates/figure/line_style_engine.md` |
 | Aesthetic balance check | 检查白底、主次层级、视觉焦点、饱和度与明度层级、辅助元素降权、留白和颜色复杂度是否与证据复杂度匹配 |
 | Color accessibility / print fallback | 关键区分不得只依赖难以辨识的颜色；必要时追加 marker / line style / hatch 等冗余编码，使灰度打印和常见色觉差异下仍可判断核心结论 |
 | Competition visual benchmark | CUMCM 正式稿按 `templates/figure/cumcm_visual_quality_gate.md` 检查最终视觉完成度是否与近年高教社杯优秀论文处于相近档次；这只是质量标尺，不是唯一选图/设计参考源，也不得复制具体 Figure |
@@ -51,11 +58,13 @@
 | Paper location | 正文章节；仅 `MAIN_TEXT` 必须给出正文位置，其他决策记录附录/表格/合并去向 |
 | Reviewer risk | 可能质疑点与处理 |
 
-Figure Contract 默认登记在 `模型论文框架.md`，不生成独立 `figure_evidence` 文件。Literature 字段只记录选图依据，不把外部论文变成数值事实源；Visual Mapping 只声明证据如何映射到视觉通道，不建立新图型 Authority；Palette / Aesthetic / Competition benchmark 只落实 Module 04 的渲染与质量规则。**高教社杯 benchmark 负责校准“最终作品达到什么档次”，Literature visual references 负责回答“同类证据可以怎样科学地画”，两者不得混为一谈。**Enhancement 只记录决策与理由，**不记录 inset 坐标、透明度等 MATLAB 实现参数**。
+Figure Contract 默认登记在 `模型论文框架.md`，不生成独立 `figure_evidence` 文件。Literature 字段只记录选图依据，不把外部论文变成数值事实源；Visual Mapping 只声明证据如何映射到视觉通道，不建立新图型 Authority；Palette / Aesthetic / Competition benchmark 只落实 Module 04 的渲染与质量规则。**高教社杯 benchmark 负责校准“最终作品达到什么档次”，Literature visual references 负责回答“同类证据可以怎样科学地画”，两者不得混为一谈。**`Line style profile / Line role map / Marker / Smoothing / Band` 仅落实已有 Publication Rendering Grammar，详细规则参考 `templates/figure/line_style_engine.md`，不得借线条美化改变 Figure Evidence、数据事实源、图数量、合图/拆图或 Main-text Admission。Enhancement 只记录决策与理由，**不记录 inset 坐标、透明度等 MATLAB 实现参数**。
 
 ## 方案 4：吸收理念，不增加外部运行依赖
 
 本 Figure Contract 可以借鉴 Grammar of Graphics / gramm 的变量映射思想、RainCloud 的“原始样本 + 分布 + 摘要”思想、UltraPlot / ProPlot 的 panel/legend/layout 思想、科学 colormap 的顺序/发散/周期语义以及 export 工具的出版 QA 思想，但**不得因此要求项目安装这些包**。最终代码应优先使用当前环境可复现的 MATLAB / Python 原生能力。
+
+线条渲染进一步采用**综合自适应型**：高教社杯只作为竞赛视觉完成度基线之一；MCM/ICM、华中杯、APMCM、MathorCup、深圳杯等优秀建模论文只提供不同维度的可迁移视觉原则，不形成新的 Figure Authority，也不得复制任何具体论文视觉皮肤。默认 `journal_competition_hybrid` 只是一套线条层级起点，Figure 可按证据结构切换 `competition_clean / decision_highlight / dense_scientific / technical_monochrome`，但所有 profile 都必须服从当前 Visual Mapping、Palette、Main-text Admission 与 Final-size QA。
 
 ## 科研配色控制：语义优先、审美受控
 
