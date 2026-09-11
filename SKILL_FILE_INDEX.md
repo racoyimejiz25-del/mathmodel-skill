@@ -180,6 +180,7 @@
 - `templates/figure/figure_enhancement_patterns.md`
 - `templates/figure/figure_paper_closure.md`
 - `templates/figure/figure_plan.md`
+- `templates/figure/line_style_engine.md`
 - `templates/figure/literature_figure_reference.md`
 - `templates/figure/mechanism_contract.md`
 - `templates/figure/mechanism_drawio_patterns.md`
