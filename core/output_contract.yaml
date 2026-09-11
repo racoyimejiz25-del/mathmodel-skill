@@ -1,4 +1,4 @@
-version: 9.1.0
+version: 9.2.0
 schema: core/workbook_schema.yaml
 preprocessing_contract: core/global_preprocessing_contract.yaml
 model_approval_contract: core/model_approval_contract.yaml
@@ -546,10 +546,17 @@ matlab_figure_contract:
   multi_panel_title: panel_labels_only
   panel_labels_allowed: true
   scientific_synthesis_required_for_core_figures: true
+  literature_guided_reference_supported: true
+  visual_mapping_required_for_core_figures: true
   basic_form_challenge_required_for_core_figures: true
   composite_encoding_preferred_when_shared_evidence_space: true
+  main_text_admission_required: true
+  competition_visual_quality_gate_for_cumcm: true
+  final_size_readability_required_for_main_text: true
+  external_plotting_dependency_required: false
   portfolio_scientific_quality_review_required: true
   high_contrast_primary_palette_required: true
+  semantic_palette_hierarchy_required: true
   auxiliary_visual_deweighting_required: true
   field_resolution: exact_header_unique_match
   expected_column_position: optional_drift_check
