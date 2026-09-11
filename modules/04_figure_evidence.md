@@ -1,8 +1,8 @@
-# Module 04：MATLAB 结果图、预处理图证据与机理图精修
+# Module 04：结果图、预处理图证据与机理图精修
 
-本模块是当前 Figure Evidence 的单一通用 Authority。`packs/artifact/figure.md`、`templates/figure/*.md` 与 MATLAB 模板只能引用或实现这里的规则，不得建立第二套绘图决策权威。
+本模块是当前 Figure Evidence 的单一通用 Authority。`packs/artifact/figure.md`、`templates/figure/*.md` 与各类绘图模板只能引用或实现这里的规则，不得建立第二套绘图决策权威。
 
-本模块采用 **方案 4：只吸收成熟科研作图方法的设计理念，不把 gramm、SciencePlots、RainCloudPlots、UltraPlot、Crameri/cmap、export_fig 等外部包变成运行依赖**。最终绘图仍可由原生 MATLAB / Python 完成；外部项目只提供图形语法、证据叠加、布局、科学配色和出版 QA 的设计启发。
+本模块采用 **方案 4：只吸收成熟科研作图方法的设计理念，不把 gramm、SciencePlots、RainCloudPlots、UltraPlot、Crameri/cmap、export_fig 等外部包变成运行依赖**。数据驱动 Figure 的正式渲染后端在 Python / MATLAB 中按当前 Figure 实际需要选择；外部项目只提供图形语法、证据叠加、布局、科学配色和出版 QA 的设计启发，不形成软件强制。
 
 ## 顶层 Figure Workflow
 
@@ -19,9 +19,13 @@
 → 候选视觉结构
 → Basic-form Challenge
 → 合图 / 拆图
+→ Rendering Backend Selection
 → Scientific Rendering Profile
 → 科研增强
 → 配色与视觉层级
+→ Line Style Engine
+→ Clarity & Visibility Review
+→ Aesthetic Review
 → Main-text Admission
 → Final-size / Export QA
 → Portfolio Gate 与正文证据闭环
@@ -35,22 +39,25 @@
 2. Python 完成完整主求解并通过主结果质量门；03A 应已经保存本次主计算真实产生且具有解释/绘图/验证价值的状态、过程与结构证据；
 3. Python 基于题目风险完成实际需要的结果深化分析，并验收 `问题X求解/` 中两个标准工作簿；03B 应保存参数、场景、阈值、算法、结构、异质性等分析的细粒度底层证据；
 4. 只有上述数值阶段完成后才进入 Figure Evidence；先明确每张图读取原始数据、统一预处理工作簿或两个标准结果工作簿中的哪一种事实源；
-5. 若为 `project_level`，此时生成并人工检查 `数据预处理/data_process.m`，只把已验收预处理工作簿中的底层证据转成图；
+5. 若为 `project_level`，项目级预处理证据图脚本由 Rendering Backend Selection Gate 在 `数据预处理/data_process_plot.py` 与 `数据预处理/data_process.m` 中二选一；两者都只能把已验收预处理工作簿中的底层证据转成图，不得重新执行预处理；
 6. 为每个候选 Figure 写 Core conclusion、Evidence level、Primary question、Available evidence dimensions；
 7. 识别 Evidence Structure；若同领域视觉惯例、复杂证据或候选图型不确定，执行 **Literature-Guided Figure Reference Gate**；
 8. 执行 **Visual Mapping Gate**，先明确 `x / y / color / size / shape / facet / annotation / uncertainty` 各自是否承担真实证据语义；
 9. 执行 **Scientific Figure Synthesis Gate**，比较合理候选视觉结构；不得先问“bar 还是 line”；
 10. 若候选核心图退化为 plain bar / plain line / plain scatter / plain box / plain histogram，执行 **Basic-form Challenge**；
-11. 执行 **Composite Encoding Preference** 与 Figure Layout Gate，先决定互补证据应合图还是拆图，再进入视觉增强；
-12. 选定视觉结构后进入对应 **Scientific Rendering Profile**；
-13. 基础布局确定后执行 Figure Enhancement Gate；只有在增加可验证信息、降低视觉搜索成本或强化关键证据时增加 Local Zoom、Small Multiples、Focus Highlighting、Semantic Background、Composite Diagnostic 或 Conditional 3D；
-14. 执行 Publication Rendering Grammar 与 **Competition Visual Quality Gate**，完成语义配色、画布、字体、图例、留白、线宽和视觉层级；
-15. 执行 **Main-text Admission Gate**，决定 `MAIN_TEXT / APPENDIX / TABLE_ONLY / MERGE / DROP`；图已画完不等于可以入正文；
-16. 生成 MATLAB 代码前实际读取工作簿，锁定工作簿名、工作表名、真实表头、单位和数据类型；
-17. 拟定 DOCX/LaTeX 正式 caption；正式论文图不设置整体 `title` / `sgtitle`，多面板按需只保留 a/b/c/d 等 panel label；
-18. 将各问 `q{x}_plot.m` 与两类 Python 脚本、两类结果工作簿放在同一 `问题X求解/`；项目级预处理图脚本固定为 `数据预处理/data_process.m`；
-19. 在论文预计插图宽度下执行 Final-size Readability / Export QA，再执行 **Figure Portfolio Scientific Quality Gate**；
-20. 检查核心结论是否有图或表证据并同步 `模型论文框架.md`；默认只保留图窗供人工检查，除非用户明确要求正式导出。
+11. 执行 **Composite Encoding Preference** 与 Figure Layout Gate，先决定互补证据应合图还是拆图，再进入渲染；
+12. 执行 **Rendering Backend Selection Gate**，按当前图型、直接标注、前景—背景对比、字体、layout、透明对象、最终尺寸和导出表现，在 Python / MATLAB 中选择综合质量更好的正式生产后端；不强制任一后端；
+13. 选定后端后进入对应 **Scientific Rendering Profile**；
+14. 基础布局确定后执行 Figure Enhancement Gate；只有在增加可验证信息、降低视觉搜索成本或强化关键证据时增加 Local Zoom、Small Multiples、Focus Highlighting、Semantic Background、Composite Diagnostic 或 Conditional 3D；
+15. 执行 Publication Rendering Grammar、Line Style Engine 与 **Competition Visual Quality Gate**，完成语义配色、画布、字体、图例、留白、线宽和视觉层级；
+16. 执行 **Clarity & Visibility Review**；检查关键线/等值线/边界/标签是否表述清楚且肉眼可见，必要时增加 contour/direct labels、调整前景—背景对比、线宽、线型或重新进入 Backend Selection；
+17. 执行 **Aesthetic Review**；在清晰、数据诚实和语义一致前提下检查整体协调、成熟度、留白、视觉焦点和是否存在默认软件感；
+18. 执行 **Main-text Admission Gate**，决定 `MAIN_TEXT / APPENDIX / TABLE_ONLY / MERGE / DROP`；图已画完、图很清楚或图很漂亮都不等于可以入正文；
+19. 生成正式绘图代码前实际读取工作簿，锁定工作簿名、工作表名、真实表头、单位和数据类型；
+20. 拟定 DOCX/LaTeX 正式 caption；正式论文图不设置整体 `title` / `sgtitle`，多面板按需只保留 a/b/c/d 等 panel label；
+21. 各问正式生产脚本在同一 `问题X求解/` 中按后端二选一：`q{x}_plot.py` 或 `q{x}_plot.m`；默认不同时保留两份正式生产脚本。项目级预处理图脚本同理二选一；
+22. 在论文预计插图宽度下执行 Final-size Readability / Export QA，再执行 **Figure Portfolio Scientific Quality Gate**；
+23. 检查核心结论是否有图或表证据并同步 `模型论文框架.md`；默认只保留交互图窗或本地预览供人工检查，除非用户明确要求正式导出。
 
 本 Skill **不设置每问必须或最多多少张图的固定数量限制**。数量由证据需要自然决定；只限制重复、低价值、无独立信息贡献和“为了作图而作图”的 Figure。
 
@@ -60,15 +67,15 @@
 
 正式机理/推导图采用 **monochrome-first（黑白线稿优先）** 视觉语法：默认白底、黑色或深灰轮廓/箭头/文字，次级结构仅用灰度、线宽、虚实、形状和留白降权。只有黑白线型与形状仍不足以区分且确有论证收益时，才允许加入少量强调色，并必须保证转灰度或黑白打印后仍能辨识。
 
-对象表达优先使用与题意实体一致的规则几何图元；几何精度要求高时继续交给 MATLAB / TikZ / GeoGebra。禁止用渐变、阴影、拟物 3D、高饱和色块或无来源图标制造“立体感”。视觉层级优先顺序为 `shape / geometry → line style / line width → grayscale → optional accent color`。
+对象表达优先使用与题意实体一致的规则几何图元；几何精度要求高时可交给 Python / MATLAB / TikZ / GeoGebra。禁止用渐变、阴影、拟物 3D、高饱和色块或无来源图标制造“立体感”。视觉层级优先顺序为 `shape / geometry → line style / line width → grayscale → optional accent color`。
 
 ### Mechanism Diagram Backend Selection Gate
 
 | 证据结构 | 首选后端 | 准入理由 |
 |---|---|---|
 | 题目对象关系、机制作用链、反馈、状态切换、约束来源，且赛中需要快速修改对象/箭头/文字 | draw.io | 离散关系适合可编辑矢量图元 |
-| 工作簿驱动的主结果、分布、误差、敏感性、空间场、Pareto 或网络权重 | MATLAB | 数值、坐标、统计量和区间必须来自已验收事实源 |
-| 精确二维几何、连续函数、切线、坐标变换或按比例边界 | MATLAB / TikZ / GeoGebra | 需要解析或坐标精度 |
+| 工作簿驱动的主结果、分布、误差、敏感性、空间场、Pareto 或网络权重 | Python / MATLAB | 先按 Rendering Backend Selection Gate 比较当前 Figure 的清晰度、审美、最终尺寸和导出表现 |
+| 精确二维几何、连续函数、切线、坐标变换或按比例边界 | Python / MATLAB / TikZ / GeoGebra | 需要解析或坐标精度；数据驱动部分仍受事实源约束 |
 | 简短公式依赖且必须与 LaTeX 字体一致 | TikZ | 直接服从论文公式环境 |
 | 临时讨论草图 | PPT / 手绘 | 只能作为草案，入文前转为正式后端 |
 
@@ -96,15 +103,20 @@ current Framework + Mechanism Contract
 
 ## B 类：项目级预处理证据图
 
-当 `preprocessing_decision=project_level` 时，必须生成独立 MATLAB 脚本 `数据预处理/data_process.m`，只读取 `数据预处理/数据预处理结果.xlsx`。MATLAB 不允许重新清洗、插值、滤波、重采样、预测填补、训练模型或重新确定参数。
+当 `preprocessing_decision=project_level` 时，必须生成独立的预处理**绘图**脚本，但不强制 MATLAB。正式生产脚本由 Rendering Backend Selection Gate 在以下两种形式中二选一：
+
+- `数据预处理/data_process_plot.py`
+- `数据预处理/data_process.m`
+
+二者都只读取 `数据预处理/数据预处理结果.xlsx`。绘图脚本不允许重新清洗、插值、滤波、重采样、预测填补、训练模型或重新确定参数；Python 被选作绘图后端也不能借“已有 Python 环境”把预处理或统计重新塞回 Figure 阶段。
 
 至少有一张图直接回答：为什么需要处理、处理是否解决已审计问题、恢复误差是否可接受、滤波是否保留信息、重采样/对齐是否满足模型输入、异常处理是否有清晰边界等问题之一。优先考虑处理前后时序/轨迹/空间场、缺失与恢复、分布 + 原始点、真实值—恢复值 + 误差、频谱、重采样覆盖、阈值边界等证据。
 
 ## C 类：各问结果图合同
 
-每张结果图至少记录：Core conclusion、Evidence level、Primary question、Figure role、Available evidence dimensions、Evidence structure、Literature visual reference、Visual mapping、Figure level、Candidate visual structures、Selected visual structure、Basic-form challenge、Composite encoding、Scientific Rendering Profile、Palette profile、Color semantics、Aesthetic balance、Competition visual benchmark、Unique information contribution、Main-text admission decision、In-figure title=`none`、论文 caption、Panel map、Layout / Split decision、Enhancement、Source workbook、Worksheet、Required headers、MATLAB script、Statistics/error、Reviewer risk、Paper location 和 Caption duty。详细字段由 `templates/figure/result_figure_contract.md` 实现。
+每张结果图至少记录：Core conclusion、Evidence level、Primary question、Figure role、Available evidence dimensions、Evidence structure、Literature visual reference、Visual mapping、Figure level、Candidate visual structures、Selected visual structure、Basic-form challenge、Composite encoding、Layout / Split decision、Rendering backend、Backend rationale、Scientific Rendering Profile、Palette profile、Color semantics、Line style profile、Clarity & visibility review、Aesthetic review、Competition visual benchmark、Unique information contribution、Main-text admission decision、In-figure title=`none`、论文 caption、Panel map、Enhancement、Source workbook、Worksheet、Required headers、Figure script、Statistics/error、Reviewer risk、Paper location 和 Caption duty。详细字段由 `templates/figure/result_figure_contract.md` 实现。
 
-结果证据优先来自本问标准工作簿：主结果证据来自 `问题X求解结果.xlsx`；参数、场景、算法、结构、阈值、异质性和稳定范围证据来自 `问题X结果深化分析.xlsx`。不得在 MATLAB 中重新求解、重新做敏感性/统计分析或从摘要数字反推绘图序列。
+结果证据优先来自本问标准工作簿：主结果证据来自 `问题X求解结果.xlsx`；参数、场景、算法、结构、阈值、异质性和稳定范围证据来自 `问题X结果深化分析.xlsx`。**无论 Python 还是 MATLAB，绘图脚本都不得重新求解、重新做敏感性/统计分析或从摘要数字反推绘图序列。**
 
 ## Figure Evidence 层级
 
@@ -170,6 +182,31 @@ F2/F3 的“高级”来自证据结构，不来自装饰数量。
 
 双 Y 轴、柱线组合等只有联合语义与量纲关系清楚时才允许，禁止为了“显得高级”强行叠加。
 
+## Figure Layout Gate：先证据关系，后版式
+
+不存在固定默认版式。单图能闭合 Primary question 时优先单图；两个证据单元强配对使用 1×2 / 2×1；三个 panel 必须形成不可拆序列才使用 1×3；2×2 只有四个 panel 服务同一 Core conclusion、结构对称且拆开会明显损失直接比较时保留。超过 4 panel 只在 small multiples / 地图阵列 / 参数矩阵 / 时序快照等“多 panel 本身就是比较结构”时例外。
+
+这里的 panel 复杂度建议**不是每问 Figure 数量上限**。当两个 Figure 分别承担不可替代的 L1/L2/L3 证据时可以同时存在。
+
+## Rendering Backend Selection Gate：Python / MATLAB 谁更适合当前 Figure
+
+数据驱动 Figure 不设置固定 MATLAB 或 Python 默认。后端选择只发生在 Figure 的证据结构和视觉结构已经确定之后，详细执行参考 `templates/figure/rendering_backend_selection.md`。
+
+至少比较：
+
+- 当前图型与 Evidence Structure 的实现自然度；
+- contour/direct label、线条/背景对比、marker、band、annotation 的可控性；
+- 中文/公式/单位 typography；
+- shared legend、colorbar、inset、small multiples、复杂 panel 的 layout；
+- scientific colormap、透明对象和高密度数据的表现；
+- 论文实际插入宽度下的可读性；
+- PDF/SVG/EPS/PNG 导出后的字体、裁切、透明度和最细线；
+- 当前项目的可复现环境与整篇 Figure 风格一致性。
+
+**不要求每张图都写 Python 和 MATLAB 两份代码。**只有 F3/MAIN_TEXT 核心图且后端优劣不明确、当前后端经过合理修正仍不能通过 Clarity/Aesthetic Review，或用户明确要求时，才做同数据、同 Visual Mapping、同最终尺寸的低成本小样比较；最终默认只保留一个正式生产后端。
+
+如果两者视觉质量实质相当，优先当前项目更稳定、更少新增依赖且更容易维持全文一致性的后端；这只是 tie-breaker，不构成固定软件偏好。
+
 ## Scientific Rendering Profiles
 
 - **Distribution**：raw samples 优先可见；box/violin + scatter、ECDF + quantile 或 histogram/density + raw context；
@@ -180,11 +217,7 @@ F2/F3 的“高级”来自证据结构，不来自装饰数量。
 - **Optimization / Pareto**：candidates + Pareto + feasible state + recommendation + knee/threshold + global/detail；
 - **High-density Scatter**：alpha scatter、binned/hexbin、2D histogram/density contour，避免不可读点云。
 
-## Figure Layout Gate：先证据关系，后版式
-
-不存在固定默认版式。单图能闭合 Primary question 时优先单图；两个证据单元强配对使用 1×2 / 2×1；三个 panel 必须形成不可拆序列才使用 1×3；2×2 只有四个 panel 服务同一 Core conclusion、结构对称且拆开会明显损失直接比较时保留。超过 4 panel 只在 small multiples / 地图阵列 / 参数矩阵 / 时序快照等“多 panel 本身就是比较结构”时例外。
-
-这里的 panel 复杂度建议**不是每问 Figure 数量上限**。当两个 Figure 分别承担不可替代的 L1/L2/L3 证据时可以同时存在。
+Profile 描述证据如何渲染，不绑定 Python 或 MATLAB。
 
 ## Figure Enhancement Gate：焦点—上下文信息增强
 
@@ -217,6 +250,12 @@ Enhancement 默认 `none`。只有增强后能增加可验证信息、降低视�
 
 普通正文 Figure 优先形成“主色角色 + 强调角色 + 中性灰辅助”的层级。这是审美倾向，不是固定颜色数量上限。全文同一对象、状态和方向性语义必须保持稳定映射。
 
+### Line Style Engine
+
+折线、直线、参考线、阈值线、拟合线和不确定性边界按 `templates/figure/line_style_engine.md` 执行。默认 `journal_competition_hybrid` 只是渲染起点，不改变证据与正文准入。优先按 `Color=对象/指标`、`LineStyle=场景/状态`、`LineWidth=重要程度`、`Marker=真实离散/关键点`、`Band=真实区间/阶段` 分工。
+
+线条美感必须服从 Clarity & Visibility Review：若黑色等值线陷入深色背景、浅色线消失在浅背景或缩小后 dash/marker 无法辨识，允许调整颜色、明度、线宽、线型和必要标签；不得为了“保持默认黑线”牺牲可见性，也不得为了清楚换成刺眼且破坏全文风格的颜色。
+
 ### Publication Frame / Typography
 
 数据驱动 Figure 默认白底；普通二维 Cartesian 图优先 open-axis publication frame，上/右边框弱化或隐藏、刻度朝外、无边框 legend、默认 `grid off`。heatmap / matrix、3D / polar 或完整 frame 明显提高判读时可例外。
@@ -235,6 +274,35 @@ Figure 尺寸由 panel 数量、label 长度、legend 复杂度、metric 数量�
 
 bar / stacked bar 承担绝对量比较时默认零基线；若零基线压缩差异，优先 interval dot、dumbbell、Global+Detail 或表格，不悄悄截断柱形。line/scatter/dot 可局部缩放但刻度必须透明。normalization / bandwidth 必须可解释。
 
+## Clarity & Visibility Review：先保证看得清、说得明白
+
+详细规则由 `templates/figure/clarity_visibility_review.md` 实现。该 Review 独立于一般审美检查，重点防止“图不难看，但信息读不清”。
+
+必须检查：
+
+1. **Direct label / contour label**：关键等值线、边界线、阈值线、推荐点、交点和阶段分界是否需要直接标注；等值线承担定量解释且读者需要频繁来回看 colorbar 时，应优先考虑稀疏、克制的 contour labels；
+2. **Foreground–background contrast**：关键线条与实际背景是否有足够明度/色相对比；黑线在深蓝等暗背景上看不清时，必须允许改成协调的浅灰白、冷灰或其他高对比颜色，而不是死守黑色；
+3. **Final-size visibility**：缩到论文真实插图宽度后，最细线、dash、marker、contour label、colorbar tick 和 annotation 是否仍清楚；
+4. **Semantic clarity**：读者是否明确知道线、颜色、band、区域分别代表什么，而不是依赖猜测；
+5. **Occlusion / clutter**：标签、legend、colorbar、annotation 是否遮挡关键证据；
+6. **Aesthetic-preserving repair**：清晰度修正必须保持整体 palette、留白、主次和论文一致性，不得用荧光、高噪声颜色粗暴解决。
+
+如果核心视觉元素在当前设计下无法被清楚辨认，则 Figure 不得视为通过最终图像质量审查。当前后端经过一次合理修正仍 FAIL 时，可以返回 Rendering Backend Selection Gate 比较另一后端。
+
+## Aesthetic Review：清楚之后再审美
+
+Aesthetic Review 不负责决定 Figure 是否科学上值得存在，只检查“值得存在且已清楚的 Figure 是否达到成熟论文的视觉完成度”。至少检查：
+
+- 白底/合理浅底、整体平衡与留白；
+- 核心焦点是否明确，次要元素是否合理降权；
+- 色彩是否协调、克制并符合科学语义；
+- 线宽、marker、字体、axis、legend、colorbar、panel label 是否形成稳定层级；
+- 是否存在 MATLAB/Python 默认主题感、随机色序、粗网格、拥挤边框、默认大 marker 或无目的装饰；
+- 同篇论文不同后端生成的 Figure 是否仍像同一套视觉系统；
+- 清晰度修正后是否变得刺眼、杂乱或破坏全文一致性。
+
+Aesthetic Review 不能覆盖 Clarity FAIL，也不能让低价值 Figure 进入正文。
+
 ## Competition Visual Quality Gate：至少达到近年高教社杯展示论文的成熟度
 
 全国大学生数学建模竞赛官网的“历年竞赛结果”把历年论文展示指向教育部中国大学生在线；因此 CUMCM / 高教社杯项目的正式 Figure 以**近几年组委会公开展示论文的整体视觉成熟度**作为最低外部基准之一。参考入口见 `templates/figure/cumcm_visual_quality_gate.md`。
@@ -247,7 +315,7 @@ bar / stacked bar 承担绝对量比较时默认零基线；若零基线压缩�
 4. **颜色协调**：颜色数量与证据复杂度匹配，同类对象跨图一致，连续/发散/分类色图选择符合数据语义；
 5. **结构完整**：关键阈值、误差、边界、推荐点、样本分布等存在时不被“漂亮但简化”的基础图吞掉；
 6. **图文融合**：图题由 caption 承担，图内不堆论文标题式大字；图能在正文附近形成明确“由图可得”的论证；
-7. **无明显默认软件感**：避免未经整理的 MATLAB 默认色序、默认粗网格、拥挤 legend、随机字号、过多边框和裁切；
+7. **无明显默认软件感**：避免未经整理的 MATLAB/Python 默认色序、默认粗网格、拥挤 legend、随机字号、过多边框和裁切；
 8. **不过度设计**：不靠渐变、霓虹、阴影、发光、装饰性 3D、花哨背景制造“高级感”。
 
 当联网且任务属于 CUMCM 正式论文 Figure 时，可查阅近期官方展示论文的视觉惯例直到模式基本饱和；若无法联网，不阻塞作图，改用本 Gate 的稳定规则。外部展示论文只作为**视觉质量参考**，绝不成为本题数值事实源。
@@ -268,7 +336,7 @@ MERGE      → 与已有图互补但单独信息贡献不足，合并更清楚
 DROP       → 重复、换皮、装饰性或无实质信息增益
 ```
 
-“图已经画出来”“看起来高级”“别人论文也画过”“让论文更丰富”“颜色很好看”均不是准入理由。即使图型简单，只要它是重要结论最直接、不可替代的证据，也可以进入正文。
+“图已经画出来”“看起来高级”“别人论文也画过”“让论文更丰富”“颜色很好看”“Python画得更漂亮”“MATLAB画得更像竞赛图”均不是准入理由。即使图型简单，只要它是重要结论最直接、不可替代的证据，也可以进入正文。
 
 ### Redundancy / Unique Contribution Check
 
@@ -282,9 +350,11 @@ DROP       → 重复、换皮、装饰性或无实质信息增益
 
 ## Final-size Readability / Export QA
 
-图在 MATLAB/Python 窗口里好看不等于进论文后好看。正式入文前必须按预计插图宽度检查：文字、marker、线型、误差区间、颜色差异、legend、colorbar 和 panel label 是否仍清楚；缩小后若信息层级崩塌，应先重新布局而不是继续缩字体。
+图在 Python/MATLAB 大窗口里好看不等于进论文后好看。正式入文前必须按预计插图宽度检查：文字、marker、线型、误差区间、颜色差异、legend、colorbar、panel label、contour label 和关键边界是否仍清楚；缩小后若信息层级崩塌，应先重新布局而不是继续缩字体。
 
-用户明确要求正式导出时优先 vector-first（PDF/SVG/EPS，视环境支持）；PNG 以约 300 DPI 为起点，极密集图确有需要可提高。检查字体、裁切、透明对象、colorbar、legend、白底和灰度/色觉可读性。方案 4 不要求安装 `export_fig` 等外部包；使用当前环境可复现的原生导出能力即可。
+用户明确要求正式导出时优先 vector-first（PDF/SVG/EPS，视当前后端与环境支持）；PNG 以约 300 DPI 为起点，极密集图确有需要可提高。检查字体、裁切、透明对象、colorbar、legend、白底和灰度/色觉可读性。方案 4 不要求安装 `export_fig`、SciencePlots 等外部包；使用当前环境可复现的原生/既有科学绘图能力即可。
+
+如果两个后端在大窗口中都不错，但只有一个在最终插入尺寸或正式导出格式中稳定通过 Clarity + Aesthetic + Export QA，则选通过者作为生产后端。
 
 ## 视觉注意力预算
 
@@ -295,7 +365,9 @@ DROP       → 重复、换皮、装饰性或无实质信息增益
 
 ## 实表读取规则
 
-正式脚本必须：使用已核对的真实工作簿名、工作表名和表头；读取第一行原始表头并做空白归一化；每个要求字段精确相等匹配并断言唯一；工作簿变化后重新读取并更新 Figure Contract；检查文件、工作表、非空、主键、非法值和排序。禁止模糊匹配、别名猜测和自动回退。
+正式绘图脚本必须：使用已核对的真实工作簿名、工作表名和表头；读取第一行原始表头并做空白归一化；每个要求字段精确相等匹配并断言唯一；工作簿变化后重新读取并更新 Figure Contract；检查文件、工作表、非空、主键、非法值和排序。禁止模糊匹配、别名猜测和自动回退。
+
+MATLAB 示例：
 
 ```matlab
 headers = strtrim(string(raw(1, :)));
@@ -304,11 +376,15 @@ assert(numel(xMatches) == 1, "字段缺失或重复: %s", xHeader);
 xColumn = xMatches(1);
 ```
 
+Python 也必须执行同等严格的**精确表头唯一匹配**，不得因为 pandas 方便而改成 contains、模糊列名、静默别名或自动 fallback。
+
 ## 图题、配色与风格
 
-正式论文图不设置整体 `title` / `sgtitle`。DOCX/LaTeX caption 承担图号、图名与必要统计口径；多面板按需只保留 a/b/c/d。默认白底、清楚细轴、中文坐标轴和单位；网格若启用应浅、稀并置于数据后方。
+正式论文图不设置整体 `title` / `sgtitle` / `suptitle`。DOCX/LaTeX caption 承担图号、图名与必要统计口径；多面板按需只保留 a/b/c/d。默认白底、清楚细轴、中文坐标轴和单位；网格若启用应浅、稀并置于数据后方。
 
 配色动态规则：主结果/推荐方案/关键曲线可以使用较高视觉权重；背景、参考线、CI、次要对象和上下文降权；同一对象和语义全文一致；连续场使用语义匹配的 sequential，正负偏差/相对基准使用 centered diverging；高对比不等于全图鲜艳。
+
+对 contour / surface 类 Figure，不得机械使用统一黑色等值线。线色必须通过 Foreground–Background Contrast Gate；必要时可在深色区域使用协调的浅色线，并给关键等值线添加稀疏数值标签，只要不破坏科学色义和整体美感。
 
 ## Figure Portfolio Scientific Quality Gate
 
@@ -316,12 +392,14 @@ xColumn = xMatches(1);
 
 1. 是否出现大量基础图型，且底层其实存在时间、空间、分布、边界、机制、不确定性或多目标结构；
 2. 是否有 Data / Claim / Structure overlap 导致重复；
-3. 是否跳过 Literature Reference、Visual Mapping、Basic-form Challenge、合图/拆图或 Main-text Admission；
+3. 是否跳过 Literature Reference、Visual Mapping、Basic-form Challenge、合图/拆图、Rendering Backend Selection、Clarity & Visibility Review、Aesthetic Review 或 Main-text Admission；
 4. 是否存在“每张单图都好看，但整篇颜色、字号、线宽、legend 和 panel 语法互相打架”；
 5. 是否在最终插入尺寸下仍清楚；
 6. CUMCM 正式稿是否达到 Competition Visual Quality Gate 的最低成熟度；
 7. 是否有核心机制、空间、动态、阈值或不确定性结论只有文字/表格而缺直接证据；
-8. 是否为了凑图型多样性强行雷达、桑基、3D 或装饰性复杂图。
+8. 是否为了凑图型多样性强行雷达、桑基、3D 或装饰性复杂图；
+9. Python 与 MATLAB 混用时是否仍保持统一字体、色义、线宽层级、legend、panel、留白和导出质量；
+10. 是否存在某张图“美观但关键线看不清”或“看得清但颜色刺眼、标签过密”的 Clarity/Aesthetic 冲突未解决。
 
 不得设置“每问最多 N 张”“必须有 N 种图型”等机械指标。
 
