@@ -67,6 +67,12 @@ MATLAB_PREPROCESSING_FORBIDDEN_HANDLE_RE = re.compile(
     r"@(" + "|".join(re.escape(name) for name in MATLAB_PREPROCESSING_FORBIDDEN_FUNCTIONS) + r")\b",
     re.IGNORECASE,
 )
+PYTHON_FIGURE_PREPROCESSING_FORBIDDEN_RE = re.compile(
+    r"(?:\.\s*(?:interpolate|fillna|dropna|fit|fit_transform|predict)\s*\(|"
+    r"\b(?:SimpleImputer|KNNImputer|StandardScaler|MinMaxScaler|RobustScaler|"
+    r"savgol_filter|filtfilt|detrend|curve_fit|least_squares|minimize)\s*\()",
+    re.IGNORECASE,
+)
 
 
 def _load_module(name: str, path: Path):
@@ -106,7 +112,6 @@ framework_section_text = ARTIFACT_FINGERPRINT.framework_section_text
 framework_section_hash = ARTIFACT_FINGERPRINT.framework_section_hash
 QUESTION_RE = PROJECT_SNAPSHOT.QUESTION_RE
 MATLAB_TITLE_RE = PROJECT_SNAPSHOT.MATLAB_TITLE_RE
-EXPORT_RE = PROJECT_SNAPSHOT.EXPORT_RE
 WORKBOOK_REF_RE = PROJECT_SNAPSHOT.WORKBOOK_REF_RE
 FIGURE_SUFFIXES = PROJECT_SNAPSHOT.FIGURE_SUFFIXES
 DATA_SUFFIXES = PROJECT_SNAPSHOT.DATA_SUFFIXES
@@ -130,6 +135,7 @@ _validate_workbook = PROJECT_SNAPSHOT._validate_workbook
 _has_sheets = PROJECT_SNAPSHOT._has_sheets
 _matlab_executable_text = PROJECT_SNAPSHOT._matlab_executable_text
 _parse_matlab = PROJECT_SNAPSHOT._parse_matlab
+_parse_python_figure = PROJECT_SNAPSHOT._parse_python_figure
 _snapshot_question = PROJECT_SNAPSHOT._snapshot_question
 
 
@@ -286,6 +292,7 @@ LAYER_TRANSITION_EVENTS = {
     "analysis_code": "analysis_code_changed",
     "solution_workbook": "solution_workbook_changed",
     "result_analysis_workbook": "analysis_workbook_changed",
+    # `matlab_script` remains the v9.2 compatibility layer name for the selected Figure script hash.
     "matlab_script": "matlab_script_changed",
     "figure_bundle": "figure_bundle_changed",
     "framework": "paper_fragment_changed",
@@ -406,7 +413,7 @@ def _docx_issues(root: Path, state: Mapping[str, Any]) -> list[str]:
     return [] if any(path.is_file() for path in files) else ["DOCX交付缺少真实.docx文件"]
 
 
-def _submission_zip_issues(path: Path, require_matlab: bool = True) -> list[str]:
+def _submission_zip_issues(path: Path, require_figure_script: bool = True) -> list[str]:
     if not path.is_file():
         return ["缺少提交ZIP"]
     try:
@@ -421,8 +428,10 @@ def _submission_zip_issues(path: Path, require_matlab: bool = True) -> list[str]
         issues.append("提交ZIP缺少Python代码")
     if not any(name.endswith(".xlsx") for name in names):
         issues.append("提交ZIP缺少结果工作簿")
-    if require_matlab and not any(name.endswith(".m") for name in names):
-        issues.append("提交ZIP缺少MATLAB脚本")
+    if require_figure_script:
+        plot_re = re.compile(r"(?:^|/)q\d+_plot\.(?:py|m)$", re.IGNORECASE)
+        if not any(plot_re.search(name) for name in names):
+            issues.append("提交ZIP缺少正式Figure脚本(qX_plot.py或qX_plot.m)")
     return issues
 
 
@@ -435,16 +444,25 @@ def _formal_state_issues(required: set[str], state: Mapping[str, Any]) -> list[s
             issues.append(f"{name}: 正式交付要求 result_quality_status=passed")
         if "result_analysis_report" in required and entry.get("result_analysis_status") != "passed":
             issues.append(f"{name}: 正式交付要求 result_analysis_status=passed")
-        if required.intersection({"approved_figures", "docx_draft", "latex_source", "compiled_pdf", "validated_submission_package"}):
+        if required.intersection({"approved_figures", "docx_draft", "latex_source", "compiled_pdf", "validated_submission_package", "submission_package"}):
             if entry.get("artifacts_stale") is True:
                 issues.append(f"{name}: 下游正式交付禁止使用 stale 结果")
-    if required.intersection({"docx_draft", "latex_source", "compiled_pdf", "validated_submission_package"}):
+    if required.intersection({"docx_draft", "latex_source", "compiled_pdf", "validated_submission_package", "submission_package"}):
         framework = state.get("paper_framework") or {}
         if _uses_fragment_stale(framework):
             stale = _stale_paper_fragment_ids(framework)
             if stale:
                 issues.append(f"正式论文交付禁止使用 stale paper fragments: {stale}")
     return issues
+
+
+def _selected_preprocessing_figure_script(root: Path) -> tuple[Path | None, list[Path]]:
+    candidates = [
+        root / "数据预处理/data_process_plot.py",
+        root / "数据预处理/data_process.m",
+    ]
+    existing = [path for path in candidates if path.is_file()]
+    return (existing[0] if existing else None), existing
 
 
 def _preprocessing_artifact_issues(
@@ -458,7 +476,7 @@ def _preprocessing_artifact_issues(
     preprocessing = state.get("preprocessing") or {}
     code = root / str(preprocessing.get("code") or "数据预处理/数据预处理.py")
     workbook = root / str(preprocessing.get("workbook") or "数据预处理/数据预处理结果.xlsx")
-    matlab = root / "数据预处理/data_process.m"
+    figure_script, figure_candidates = _selected_preprocessing_figure_script(root)
     if "preprocessing_code" in required and not code.is_file():
         issues.append("project_level正式交付缺少数据预处理/数据预处理.py")
     if "preprocessing_workbook" in required:
@@ -466,16 +484,18 @@ def _preprocessing_artifact_issues(
             issues.append("project_level正式交付缺少数据预处理/数据预处理结果.xlsx")
         if preprocessing.get("status") != "accepted" or preprocessing.get("quality_status") != "passed":
             issues.append("project_level正式交付要求预处理工作簿accepted且预处理质量门passed")
-    if "preprocessing_matlab_script" in required:
-        if not matlab.is_file():
-            issues.append("project_level图表及论文交付缺少数据预处理/data_process.m")
-        else:
-            has_title, workbook_refs, exports = _parse_matlab(matlab)
+    if "preprocessing_figure_script" in required:
+        if len(figure_candidates) > 1:
+            issues.append("project_level检测到data_process_plot.py与data_process.m同时存在；正式Figure pipeline默认只保留一个生产后端")
+        if figure_script is None:
+            issues.append("project_level图表及论文交付缺少预处理Figure脚本；应按Backend Selection选择data_process_plot.py或data_process.m")
+        elif figure_script.suffix.lower() == ".m":
+            has_title, workbook_refs, exports = _parse_matlab(figure_script)
             if has_title:
                 issues.append("data_process.m正式论文图不得设置整体title或sgtitle；正式图名由LaTeX/DOCX caption承担")
             if "数据预处理结果.xlsx" not in {Path(item).name for item in workbook_refs}:
                 issues.append("data_process.m必须读取数据预处理结果.xlsx")
-            text = matlab.read_text(encoding="utf-8", errors="ignore")
+            text = figure_script.read_text(encoding="utf-8", errors="ignore")
             code_text = _matlab_executable_text(text)
             forbidden_matches = sorted({
                 match.group(1).lower()
@@ -505,10 +525,24 @@ def _preprocessing_artifact_issues(
                     + ", ".join(handle_matches)
                 )
             for item in exports:
-                export_path = (matlab.parent / item).resolve()
+                export_path = (figure_script.parent / item).resolve()
                 if not export_path.is_file():
                     shown = export_path.relative_to(root).as_posix() if export_path.is_relative_to(root) else export_path.as_posix()
                     issues.append(f"data_process.m声明导出的图不存在: {shown}")
+        else:
+            has_title, workbook_refs, exports = _parse_python_figure(figure_script)
+            if has_title:
+                issues.append("data_process_plot.py正式论文图不得设置整体title/suptitle/set_title；正式图名由LaTeX/DOCX caption承担")
+            if "数据预处理结果.xlsx" not in {Path(item).name for item in workbook_refs}:
+                issues.append("data_process_plot.py必须读取数据预处理结果.xlsx")
+            text = figure_script.read_text(encoding="utf-8", errors="ignore")
+            if PYTHON_FIGURE_PREPROCESSING_FORBIDDEN_RE.search(text):
+                issues.append("data_process_plot.py不得重新执行预处理、拟合、预测或优化；检测到疑似越界数据处理调用")
+            for item in exports:
+                export_path = (figure_script.parent / item).resolve()
+                if not export_path.is_file():
+                    shown = export_path.relative_to(root).as_posix() if export_path.is_relative_to(root) else export_path.as_posix()
+                    issues.append(f"data_process_plot.py声明导出的图不存在: {shown}")
     return issues
 
 
@@ -536,16 +570,20 @@ def _scope_artifact_issues(
         issues.append("结果交付缺少标准结果深化分析工作簿")
     if "result_analysis_report" in required and not all(snapshot.get("result_analysis_report") for snapshot in snapshots.values()):
         issues.append("结果交付缺少结果深化分析报告")
+    if "figure_scripts" in required:
+        for key, snapshot in snapshots.items():
+            if not snapshot.get("figure_script"):
+                issues.append(f"{key}: 正式图表交付缺少qX_plot.py或qX_plot.m")
     if "approved_figures" in required:
         issues.extend(_approved_figure_issues(root, state))
     if "docx_draft" in required:
         issues.extend(_docx_issues(root, state))
     if required.intersection({"latex_source", "compiled_pdf", "compile_report"}):
         issues.extend(_compile_artifact_issues(root, state))
-    if "validated_submission_package" in required:
+    if required.intersection({"validated_submission_package", "submission_package"}):
         artifacts = state.get("artifacts") or {}
         package = root / str(artifacts.get("submission_package") or "submission/submission.zip")
-        issues.extend(_submission_zip_issues(package, require_matlab=True))
+        issues.extend(_submission_zip_issues(package, require_figure_script=True))
     return issues
 
 
