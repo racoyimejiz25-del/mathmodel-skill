@@ -26,7 +26,7 @@
 | Color semantics | 记录主对象、对照、基准、风险/失效、推荐方案、CI/区间、背景或参考元素各自承担的颜色语义；同一对象和同一方向性语义全文保持一致 |
 | Aesthetic balance check | 检查白底、主次层级、视觉焦点、饱和度与明度层级、辅助元素降权、留白和颜色复杂度是否与证据复杂度匹配 |
 | Color accessibility / print fallback | 关键区分不得只依赖难以辨识的颜色；必要时追加 marker / line style / hatch 等冗余编码，使灰度打印和常见色觉差异下仍可判断核心结论 |
-| Competition visual benchmark | CUMCM 正式稿按 `templates/figure/cumcm_visual_quality_gate.md` 检查是否达到近年组委会公开展示论文的最低视觉成熟度；不复制具体 Figure |
+| Competition visual benchmark | CUMCM 正式稿按 `templates/figure/cumcm_visual_quality_gate.md` 检查最终视觉完成度是否与近年高教社杯优秀论文处于相近档次；这只是质量标尺，不是唯一选图/设计参考源，也不得复制具体 Figure |
 | Final-size readability | 按论文预计插入宽度检查文字、marker、线型、误差带、legend、colorbar、panel label 和主次层级是否仍清楚 |
 | Scientific value rationale | 相较替代方案如何增加可验证信息、揭示模型结构或降低评委搜索成本 |
 | Unique information contribution | 相对当前论文已有图表，本 Figure 新增了什么可验证信息；若不能明确说明，优先合并或删除 |
@@ -51,7 +51,7 @@
 | Paper location | 正文章节；仅 `MAIN_TEXT` 必须给出正文位置，其他决策记录附录/表格/合并去向 |
 | Reviewer risk | 可能质疑点与处理 |
 
-Figure Contract 默认登记在 `模型论文框架.md`，不生成独立 `figure_evidence` 文件。Literature 字段只记录选图依据，不把外部论文变成数值事实源；Visual Mapping 只声明证据如何映射到视觉通道，不建立新图型 Authority；Palette / Aesthetic / Competition benchmark 只落实 Module 04 的渲染与质量规则。Enhancement 只记录决策与理由，**不记录 inset 坐标、透明度等 MATLAB 实现参数**。
+Figure Contract 默认登记在 `模型论文框架.md`，不生成独立 `figure_evidence` 文件。Literature 字段只记录选图依据，不把外部论文变成数值事实源；Visual Mapping 只声明证据如何映射到视觉通道，不建立新图型 Authority；Palette / Aesthetic / Competition benchmark 只落实 Module 04 的渲染与质量规则。**高教社杯 benchmark 负责校准“最终作品达到什么档次”，Literature visual references 负责回答“同类证据可以怎样科学地画”，两者不得混为一谈。**Enhancement 只记录决策与理由，**不记录 inset 坐标、透明度等 MATLAB 实现参数**。
 
 ## 方案 4：吸收理念，不增加外部运行依赖
 
@@ -70,7 +70,7 @@ Figure Contract 默认登记在 `模型论文框架.md`，不生成独立 `figur
 - 禁止 `rainbow/jet`、无序彩虹、所有对象同时高饱和，以及单纯为了“高级感”增加霓虹、发光或装饰渐变；
 - 红—绿不得作为唯一关键信息区分，必要时提供线型、marker、hatch、边框或文字标签冗余编码。
 
-**美感必须达到成熟竞赛论文水平，但美感不是独立的正文准入理由。**CUMCM 正式稿至少执行 Competition Visual Quality Gate；若一种配色或布局更漂亮却破坏数值顺序、类别区分、阈值语义、黑白打印可读性或全文一致性，则否决。
+**美感必须达到成熟竞赛论文水平，CUMCM 正式稿应以“与近年高教社杯优秀论文整体完成度相近”为质量目标，但这不是独立正文准入理由，也不意味着只参照或模仿高教社杯。**若一种配色或布局更漂亮却破坏数值顺序、类别区分、阈值语义、黑白打印可读性或全文一致性，则否决。
 
 ## Main-text Admission Test
 
