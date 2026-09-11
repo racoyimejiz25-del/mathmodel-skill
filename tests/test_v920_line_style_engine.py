@@ -69,7 +69,7 @@ class LineStyleEngineV920Tests(unittest.TestCase):
             "Line final-size QA",
             "MAIN_TEXT / APPENDIX / TABLE_ONLY / MERGE / DROP",
             "不设置每问必须或最多多少张图的固定数量限制",
-            "不得借线条美化改变 Figure Evidence、数据事实源、图数量、合图/拆图或 Main-text Admission",
+            "不得借后端切换改变 Figure Evidence、accepted workbook、数据范围、统计口径、Visual Mapping、图数量、合图/拆图或 Main-text Admission",
         ]:
             self.assertIn(token, contract)
 
