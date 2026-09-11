@@ -1,8 +1,8 @@
 ---
 name: mathmodel-skill
 version: 9.2.0
-summary: HSK mathematical-modeling workflow with bootstrap-first task routing, Problem Contract freezing, independent Model Challenge, explicit Human Model Approval bound to the current semantic revision and validated structured identity, user-owned full-fidelity numerical execution, evidence-checked workbooks, literature-guided and dependency-free scientific Figure Evidence with Visual Mapping, main-text admission and CUMCM-quality rendering gates, editable draw.io mechanism diagrams with deterministic structural checks and required rendered review, model-construction rationale with solver-precondition evidence, Template-First paper authoring with state-driven per-question writing capability preflight and final-order Cross-File Chapter Handoff, formal LaTeX attestation, evidence-traceable final review compliance, and validated delivery provenance.
-triggers: [数学建模, 数模, CUMCM, 国赛, MCM, ICM, 电工杯, 认证杯, 审题, 问题分析, 建模思路, 建模方案, 模型比较, 完整求解, 全流程, 建模论文, 模型论文框架, 模型锁定, 模型审查, 算法流程, 伪代码, 数据预处理, 数据清洗, 主结果质量, 数值有效性, 结果分析, 结果深化分析, Python求解, MATLAB绘图, 可编辑机理图, draw.io, drawio, LaTeX, DOCX, 终审, 提交包]
+summary: HSK mathematical-modeling workflow with bootstrap-first task routing, Problem Contract freezing, independent Model Challenge, explicit Human Model Approval bound to the current semantic revision and validated structured identity, user-owned full-fidelity numerical execution, evidence-checked workbooks, literature-guided and dependency-free scientific Figure Evidence with Visual Mapping, adaptive Python/MATLAB Rendering Backend Selection, Clarity & Visibility and Aesthetic review, main-text admission and CUMCM-quality rendering gates, editable draw.io mechanism diagrams with deterministic structural checks and required rendered review, model-construction rationale with solver-precondition evidence, Template-First paper authoring with state-driven per-question writing capability preflight and final-order Cross-File Chapter Handoff, formal LaTeX attestation, evidence-traceable final review compliance, and validated delivery provenance.
+triggers: [数学建模, 数模, CUMCM, 国赛, MCM, ICM, 电工杯, 认证杯, 审题, 问题分析, 建模思路, 建模方案, 模型比较, 完整求解, 全流程, 建模论文, 模型论文框架, 模型锁定, 模型审查, 算法流程, 伪代码, 数据预处理, 数据清洗, 主结果质量, 数值有效性, 结果分析, 结果深化分析, Python求解, Python绘图, MATLAB绘图, 科研绘图, 图像审查, 可编辑机理图, draw.io, drawio, LaTeX, DOCX, 终审, 提交包]
 ---
 
 # HSK 数学建模模块化工作流 v9.2.0
@@ -47,7 +47,7 @@ triggers: [数学建模, 数模, CUMCM, 国赛, MCM, ICM, 电工杯, 认证杯, 
 - 题目专属预处理、主求解与结果深化 Python 由用户本地按 `full_fidelity` 执行；助手负责生成、静态检查和验收返回 artifact，不得静默降采样、放宽容差、缩短时域或切换求解器。
 - `模型论文框架.md` 保存当前项目语义与证据位置；`state/project_state.yaml` 管 revision/structured identity/text provenance/stale；accepted workbook 是具体数值事实源。三者职责不得互相替代。
 - 主求解数值有效性与 accepted 资格服从 `core/numerical_verification_contract.yaml`；accepted 后的替代世界/敏感性/稳健性分析服从 resolver 命中的结果分析模块，不反向扩张主质量门。
-- MATLAB 只消费 Python 已输出且已验收的数据/工作簿进行 Figure Evidence，不重新预处理或求解；正式图名由 LaTeX/DOCX caption 承担。
+- 数据驱动 Figure 的正式渲染后端按 `modules/04_figure_evidence.md` 在 Python / MATLAB 中自适应选择，**不强制任一后端**。无论选择哪一个，都只能消费已允许的数据事实源/accepted workbook，不重新预处理、求解或做深化统计；正式图名由 LaTeX/DOCX caption 承担，并必须通过 Clarity & Visibility、Aesthetic、Main-text Admission 与 Final-size QA。
 - 可编辑 draw.io 只服务后端选择门确认的非数据驱动题目专属机理图；确定性结构检查不替代渲染预览、箭头语义或数学正确性人工复核。
 - LaTeX 是默认论文主链；CUMCM 结构先由 Template Manifest 确定，再逐章读取当前写作规则。DOCX 只在用户明确要求 Word 载体时加载。
 - 最终交付只执行 resolver 当前返回且按顺序排列的 `pre_delivery_gates`；入口文件不维护第二套 gate 清单。
@@ -74,6 +74,9 @@ triggers: [数学建模, 数模, CUMCM, 国赛, MCM, ICM, 电工杯, 认证杯, 
 | 主求解 / Primary Evidence | `modules/03_solve_validate.md` |
 | accepted 后结果深化 | `modules/03_result_analysis.md` |
 | 科研图证据 | `modules/04_figure_evidence.md` |
+| Figure 后端选择 | `templates/figure/rendering_backend_selection.md` |
+| Figure 清晰度审查 | `templates/figure/clarity_visibility_review.md` |
+| 线条渲染 | `templates/figure/line_style_engine.md` |
 | 可编辑机理图实现 | `templates/figure/mechanism_drawio_spec.yaml`, `templates/figure/mechanism_drawio_patterns.md`, `scripts/generate_mechanism_drawio.py`, `scripts/validate_drawio_figure.py` |
 | CUMCM 固定结构 | `templates/latex/cumcm/hsk/template_manifest.yaml` |
 | 写作读取状态机 | `core/writing_runtime_contract.yaml` |
@@ -85,7 +88,7 @@ triggers: [数学建模, 数模, CUMCM, 国赛, MCM, ICM, 电工杯, 认证杯, 
 
 ## 能力发现标签
 
-以下名称仅用于能力发现与回归，不在本入口重复定义规则：**Template Manifest、Paper Writing Protocol、Cross-File Chapter Handoff、Primary Evidence Capture、Scientific Figure Synthesis、Literature-Guided Figure Reference、Visual Mapping、Main-text Admission、Competition Visual Quality、Editable Mechanism Diagram、Model/Solver/Validator、Model Construction Rationale、Solver Preconditions、Claim Strength Calibration、Final Review Compliance & Evidence Sweep、within-question local dependency architecture、decisiveness-based detail allocation、adaptive subsection separation、adaptive figure-result narrative**。具体定义只读取上表 Authority。
+以下名称仅用于能力发现与回归，不在本入口重复定义规则：**Template Manifest、Paper Writing Protocol、Cross-File Chapter Handoff、Primary Evidence Capture、Scientific Figure Synthesis、Literature-Guided Figure Reference、Visual Mapping、Rendering Backend Selection、Line Style Engine、Clarity & Visibility Review、Aesthetic Review、Main-text Admission、Competition Visual Quality、Editable Mechanism Diagram、Model/Solver/Validator、Model Construction Rationale、Solver Preconditions、Claim Strength Calibration、Final Review Compliance & Evidence Sweep、within-question local dependency architecture、decisiveness-based detail allocation、adaptive subsection separation、adaptive figure-result narrative**。具体定义只读取上表 Authority。
 
 兼容发现 token 仅保留名称：`preprocessing_decision`、`问题X结果深化分析.py`、**Algorithm Trace**。它们用于 lint/路由与 artifact 导航，不在入口重新定义预处理枚举、结果分析流程或算法呈现规则。
 
