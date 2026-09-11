@@ -30,6 +30,7 @@
 - `templates/figure/per_question_mechanism_plan.md`
 - `templates/figure/result_figure_contract.md`
 - `templates/figure/result_figure_qa.md`
+- `templates/figure/visual_mapping_contract.md`
 - `templates/latex/cumcm/cumcmthesis/.gitignore`
 - `templates/latex/cumcm/cumcmthesis/README.md`
 - `templates/latex/cumcm/cumcmthesis/cumcmthesis.cls`
