@@ -1,6 +1,14 @@
 %% q1_plot：问题一结果绘图入口（当前活动模板）
-% 放在“问题一求解/”，与唯一Python脚本和两个标准工作簿同目录。
+% 放在“问题一求解/”，与主求解Python、深化分析Python和两个标准工作簿同目录。
 % 字段使用精确表头唯一匹配；期望列号仅用于结构漂移警告。
+% 先执行 modules/04_figure_evidence.md 的 Scientific Figure Synthesis Gate，识别 Evidence Structure；不要从本模板的示例函数反推最终图型。
+% 正文核心图若只是 plain bar/line/scatter/box/histogram，必须执行 Basic-form Challenge。
+% 同一证据空间有互补编码时优先 Composite Encoding，例如 box+scatter、violin+scatter、line+interval、scatter+fit+CI、heatmap+contour、trajectory+boundary。
+% 选定视觉结构后进入 Scientific Rendering Profile，再通过 Figure Layout Gate 动态判断单图、1×2、2×1、1×3、2×2 或拆图。
+% 基础布局确定后执行 Figure Enhancement Gate；按需使用 Local Zoom、Small Multiples、Focus Highlighting、Semantic Background、Composite Diagnostic 或 Conditional 3D。
+% 视觉结构确定后再进入 Publication Rendering Grammar：palette profile / open-axis / adaptive canvas / legend strategy；不得反向用样式决定图型。
+% Enhancement 的实现模式参考 templates/figure/figure_enhancement_patterns.md，不得在本模板建立第二套绘图决策规则。
+% 正式论文图不设置整体 title/sgtitle；正式图题由 LaTeX/DOCX caption 承担，多面板按需只保留 a/b/c/d 等 panel label。
 
 clearvars;
 clc;
@@ -15,21 +23,21 @@ assert(isfile(solutionBook), "缺少工作簿: %s", solutionBook);
 assert(isfile(resultAnalysisBook), "缺少工作簿: %s", resultAnalysisBook);
 
 %% 2. 实际结构锁定
-% 图型选择以核心结论和信息效率为准。兼容检查标记：xColumn = NaN；actualXHeader == xHeader。
-% 主结果图使用solutionBook；稳定性、阈值、算法或结构图使用resultAnalysisBook。
+% 图型选择以 Core conclusion / Evidence level / Primary question / Evidence structure 和信息效率为准。
+% 兼容检查标记：xColumn = NaN；actualXHeader == xHeader。
+% 主结果图优先使用solutionBook；稳定性、阈值、算法或结构图优先使用resultAnalysisBook。
+% 若图确实需要底层事实源，必须继承当前 preprocessing_decision；MATLAB 不重建模型变换。
 sourceBook = solutionBook;
 sourceSheet = "__ACTUAL_SHEET_NAME__";
 xHeader = "__ACTUAL_X_HEADER__";
 yHeader = "__ACTUAL_Y_HEADER__";
 expectedXColumn = NaN;  % 可选，仅作结构漂移警告
 expectedYColumn = NaN;
-figureTitle = "__ACTUAL_FIGURE_TITLE__";
 xLabelText = "__ACTUAL_X_LABEL_WITH_UNIT__";
 yLabelText = "__ACTUAL_Y_LABEL_WITH_UNIT__";
 
-placeholders = [sourceSheet, xHeader, yHeader, figureTitle, xLabelText, yLabelText];
+placeholders = [sourceSheet, xHeader, yHeader, xLabelText, yLabelText];
 assert(~any(startsWith(placeholders, "__ACTUAL_")), "模板尚未实例化");
-assert(strlength(strtrim(figureTitle)) <= 30, "图标题过长");
 
 availableSheets = string(sheetnames(sourceBook));
 assert(any(availableSheets == sourceSheet), "缺少工作表: %s", sourceSheet);
@@ -51,16 +59,26 @@ assert(~isempty(x), "没有可绘制的真实数据");
 [x, order] = sort(x);
 y = y(order);
 
-%% 3. 正式结果图
-fig = figure("Color", "w", "Position", [100, 100, 900, 620]);
+%% 3. 结构读取示例——正式实例化时必须由 Scientific Figure Synthesis 结果替换/扩展
+% 本段只证明“真实字段读取 → 可见图窗 → caption-owned title → high-contrast style”链路可用，
+% 不是“所有题都画折线”的默认 Figure。若 Evidence Structure 是分布/空间/参数面/Pareto/诊断等，
+% 应按对应 Scientific Rendering Profile 改写本段，而不是机械沿用。
+fig = figure("Color", "w", "Position", [100, 100, 960, 620]);
 ax = axes(fig);
-plot(ax, x, y, "LineWidth", 2.2, "Color", [23, 59, 94] / 255);
+hold(ax, "on");
+palette = apply_publication_style(fig, "competition_high_contrast");
+
+% 示例采用“真实样本点 + 连续/顺序关系线”的轻量组合；若 x 不是有序连续语义，应删除连接线。
+plot(ax, x, y, "LineWidth", 2.2, "Color", palette.primary, ...
+    "DisplayName", "主结果");
+scatter(ax, x, y, 32, palette.comparison, "filled", ...
+    "MarkerFaceAlpha", 0.85, "DisplayName", "真实点");
+
 xlabel(ax, xLabelText);
 ylabel(ax, yLabelText);
-title(ax, figureTitle, "FontWeight", "normal");
+legend(ax, "Location", "best");
 grid(ax, "off");
-box(ax, "on");
-apply_scientific_style(fig);
+apply_publication_style(fig, "competition_high_contrast");
 
 %% 4. 图窗保留供人工检查；本脚本默认不自动导出文件
 
@@ -89,19 +107,37 @@ for i = 1:size(column, 1)
 end
 end
 
-function apply_scientific_style(fig)
-fontName = select_font();
+function palette = apply_publication_style(fig, profile)
+% 优先使用仓库共享 style kernel；单文件独立运行时保留最小 fallback，不改变每问五文件接口。
+if exist("hsk_apply_scientific_style", "file") == 2
+    palette = hsk_apply_scientific_style(fig, profile);
+    return;
+end
+palette = local_publication_palette(profile);
+fontName = local_select_font();
 set(fig, "Color", "w");
 for ax = reshape(findall(fig, "Type", "axes"), 1, [])
-    set(ax, "FontName", fontName, "FontSize", 18, "LineWidth", 1.4, "Box", "on", "Layer", "top");
+    set(ax, "FontName", fontName, "FontSize", 16, "LineWidth", 1.15, ...
+        "Box", "off", "Layer", "top", "TickDir", "out");
     grid(ax, "off");
 end
 for lgd = reshape(findall(fig, "Type", "legend"), 1, [])
-    set(lgd, "FontName", fontName, "FontSize", 16, "Box", "off");
+    set(lgd, "FontName", fontName, "FontSize", 14, "Box", "off");
 end
 end
 
-function fontName = select_font()
+function palette = local_publication_palette(profile)
+assert(profile == "competition_high_contrast", ...
+    "独立单文件 fallback 只提供 competition_high_contrast；其他 profile 请让共享 hsk_apply_scientific_style.m 位于 MATLAB path");
+palette.primary = [20, 120, 255] / 255;
+palette.comparison = [240, 68, 68] / 255;
+palette.positive = [22, 179, 100] / 255;
+palette.accent = [247, 144, 9] / 255;
+palette.secondary = [122, 90, 248] / 255;
+palette.context = [154, 164, 178] / 255;
+end
+
+function fontName = local_select_font()
 preferred = ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "Arial Unicode MS", "Helvetica", "Arial"];
 available = string(listfonts);
 fontName = "Helvetica";

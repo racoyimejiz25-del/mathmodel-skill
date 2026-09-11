@@ -1,0 +1,234 @@
+version: 1.2.0
+introduced_in_skill_version: 7.12.0
+skill_compatibility: '>=7.12.0,<10.0.0'
+purpose: >-
+  Define the machine-readable runtime assurance layer that sits above the legacy
+  resolver plan: context hydration, intent provenance, artifact assurance,
+  declarative contract dependency closure, and authority fingerprinting. This
+  contract does not redefine modeling, workbook, approval, execution, writing,
+  numerical-verification, or submission semantics owned by their existing authorities.
+
+authority_boundary:
+  owns:
+  - runtime_context_precedence
+  - intent_resolution_provenance
+  - artifact_assurance_semantics
+  - runtime_contract_dependency_closure
+  - authority_fingerprint
+  - runtime_plan_assurance_envelope
+  delegates:
+    route_order_and_boundaries: core/workflow_router.yaml
+    module_artifact_graph: core/module_manifest.yaml
+    project_state_schema: core/project_state.schema.yaml
+    model_approval: core/model_approval_contract.yaml
+    semantic_identity_implementation: scripts/semantic_identity.py
+    preprocessing: core/global_preprocessing_contract.yaml
+    user_execution: core/user_execution_contract.yaml
+    code_quality: core/code_quality_contract.yaml
+    workbook: core/workbook_schema.yaml
+    numerical_verification: core/numerical_verification_contract.yaml
+    writing_reasoning: core/writing_reasoning_contract.yaml
+    writing_runtime: core/writing_runtime_contract.yaml
+    writing_protocol: modules/05_writing/paper_writing_protocol.md
+    cumcm_template: templates/latex/cumcm/hsk/template_manifest.yaml
+
+runtime_context:
+  optional_project_root: true
+  state_path: state/project_state.yaml
+  framework_path: 模型论文框架.md
+  precedence:
+  - explicit_cli_or_api_arguments
+  - current_project_state
+  - current_framework_navigation_only
+  - deterministic_keyword_inference
+  rules:
+  - Explicit intent, competition, classification, preprocessing decision, question scope, or artifact declarations remain backward-compatible inputs.
+  - When project_root is supplied, current project state may hydrate missing competition, preprocessing decision, question classification, and verified artifact availability.
+  - Framework memory may guide a human or agent to the relevant section, but the runtime resolver must not promote framework prose into a verified numerical artifact.
+  - Project-state hydration must never silently override a conflicting explicit argument; conflicts are reported in assurance.context.conflicts.
+  - Multi-question classification is hydrated automatically only when the scoped questions agree; otherwise the resolver reports ambiguity and requires explicit classification for routes that need task packs.
+
+intent_resolution:
+  explicit_intent_priority: true
+  inference_source: core/workflow_router.yaml:routing.*.infer_keywords
+  score_meaning: sum_of_matched_keyword_character_lengths_not_probability
+  selection_rule: explicit_intents_else_top_specificity_candidates
+  confidence_bands:
+    explicit: high
+    unique_multi_match: high
+    unique_single_match: medium
+    tied_top_match: low
+  required_diagnostics:
+  - mode
+  - explicit_intents
+  - inferred_candidates
+  - selected_intents
+  - confidence_band
+  - confidence_score
+  - ambiguity
+  - selection_reason
+  rules:
+  - Inference is deterministic and explainable; every inferred candidate records matched keywords, matched keyword count, and specificity score.
+  - When explicit intents exist, inferred keyword matches remain provenance only and cannot silently add routes.
+  - Without explicit intent, only the highest-specificity candidate or tied highest-specificity candidates are selected; lower-scoring matches remain diagnostics only.
+  - full_workflow retains dominance when it is among the selected top inferred candidates.
+  - Ambiguity means multiple inferred candidates share the selected top specificity score; routes that still lack required classification after hydration fail closed through the existing resolver prerequisite logic.
+
+artifact_assurance:
+  legacy_name_only_input: available_artifacts
+  legacy_status: declared_unverified
+  project_path_boundary: artifact paths hydrated from project state must resolve inside project_root
+  semantic_identity_mode_selection:
+    principle: structured_identity_preferred_legacy_only_when_absent
+    structured_state_when: any semantic_identity_* field is present for the current question
+    structured_framework_when: current question contains a complete valid HSK Semantic Identity Block
+    legacy_when: both state has no semantic_identity_* fields and framework has no SIB markers
+    partial_or_mode_mismatch_fails_closed: true
+  verified_state_sources:
+    locked_model_spec:
+      kind: semantic_file_backed
+      common_requires:
+      - model_challenge_status == passed
+      - human_model_approval_status == approved
+      - approved_semantic_revision == semantic_revision
+      - current 模型论文框架.md exists
+      - current question semantic scope exists in 模型论文框架.md
+      structured_requires:
+      - semantic_identity_schema_version == current supported SIB schema version
+      - current framework SIB parses and validates
+      - hash(current canonical SIB) == semantic_identity_hash
+      - semantic_identity_hash == validated_semantic_identity_hash
+      - validated_semantic_identity_hash == approved_semantic_identity_hash
+      legacy_read_only_evidence:
+      - no semantic_identity_* state fields exist
+      - current framework semantic scope contains no SIB markers
+      - approved_semantic_hash == semantic_hash
+      - sha256(current framework semantic scope) == semantic_hash
+      - status is legacy_review_required, never verified
+      - migration to a current validated and explicitly approved SIB is required before new preprocessing or primary-solve code delivery
+    preprocessing_workbook:
+      kind: file_backed
+      requires:
+      - preprocessing.status == accepted
+      - workbook path resolves inside project_root
+      - workbook path exists
+      - expected sha256 exists
+      - actual sha256 == expected sha256
+    accepted_solution_workbook:
+      kind: file_backed
+      requires:
+      - primary_execution_status == accepted
+      - result_quality_status == passed
+      - workbook path resolves inside project_root
+      - workbook path exists
+      - validated or current workbook sha256 exists
+      - actual sha256 == expected sha256
+    accepted_result_analysis_workbook:
+      kind: file_backed
+      requires:
+      - analysis_execution_status == accepted
+      - result_analysis_status == passed
+      - workbook path resolves inside project_root
+      - workbook path exists
+      - validated or current workbook sha256 exists
+      - actual sha256 == expected sha256
+  scope_rules:
+  - With --question Qn, semantic and workbook evidence is evaluated for that question.
+  - Without a question scope, generic locked_model_spec is promoted only when every scoped question passes the structured identity evidence chain; legacy questions remain readable provenance but are not promoted as verified locked_model_spec.
+  - Without a question scope, generic accepted_solution_workbook or accepted_result_analysis_workbook is promoted only when every scoped subproblem satisfies the corresponding condition.
+  - A known stale, rejected, hash-mismatched, missing, malformed, identity-mode-mismatched, legacy-review-required, or outside-project-root artifact must not be promoted merely because its legacy name appears in available_artifacts.
+  - Runtime assurance recomputes current semantic evidence from 模型论文框架.md. Project-state equality alone cannot self-attest locked_model_spec.
+  - In structured mode, wording-only prose outside the SIB may change semantic_text_hash without invalidating locked_model_spec when the canonical SIB identity and all approval bindings remain current.
+  required_evidence_fields:
+  - artifact
+  - source
+  - scope
+  - status
+  - reason
+  - path
+  - expected_sha256
+  - actual_sha256
+  optional_semantic_evidence_fields:
+  - identity_mode
+  - identity_schema_version
+
+contract_dependency_closure:
+  source: core/runtime_assurance_contract.yaml:contract_dependencies
+  principle: >-
+    Route declarations choose work; selected modules and utility gates then pull
+    the contracts they require. Router-level explicit core contract loads remain
+    readable as compatibility hints but are not required for correctness.
+  contract_dependencies:
+    modules/01_problem_audit.md: [taxonomy]
+    modules/02_model_design.md: [taxonomy, preprocessing, model_approval, writing_reasoning, numerical_verification]
+    modules/03_data_preprocessing.md: [preprocessing, model_approval, user_execution, code_quality]
+    modules/03_solve_validate.md: [preprocessing, model_approval, user_execution, code_quality, workbook, numerical_verification]
+    modules/03_result_analysis.md: [taxonomy, preprocessing, user_execution, code_quality, workbook]
+    modules/04_figure_evidence.md: [workbook]
+    modules/05_writing/docx.md: [writing_reasoning, writing_protocol]
+    modules/05_writing/latex.md: [writing_runtime, writing_protocol]
+    modules/05_writing/ai_cleanup.md: [writing_runtime, writing_protocol]
+    modules/05_latex_compile_quality.md: [compile_profiles]
+    modules/06_review_delivery.md: [writing_reasoning, output, workbook]
+    gate:semantic_governance: [project_state, state_transition]
+    gate:model_approval: [project_state, model_approval]
+    gate:code_delivery: [code_quality, state_transition]
+    gate:user_execution_receipt: [user_execution, workbook, numerical_verification]
+    gate:project_sync: [project_state, output, state_transition]
+    gate:submission_package_validation: [output]
+  rules:
+  - Dependency aliases resolve through core/module_manifest.yaml:contracts.
+  - Closure only adds missing contracts and never reorders modules.
+  - Missing aliases or missing contract paths are blocking runtime configuration errors.
+
+assurance_envelope:
+  additive_backward_compatibility: true
+  legacy_top_level_plan_preserved: true
+  new_top_level_sections: [runtime_plan, assurance]
+  runtime_plan_fields:
+  - selected_intents
+  - delivery_scope
+  - pause_state
+  - modules
+  - pre_delivery_gate_names
+  - terminal_outputs
+  assurance_fields:
+  - schema_version
+  - status
+  - context
+  - intent_resolution
+  - artifact_assurance
+  - dependency_closure
+  - authority_fingerprint
+  status_values: [pass, review_required]
+  review_required_when:
+  - intent ambiguity remains unresolved
+  - explicit input conflicts with current project state
+  - a legacy artifact declaration conflicts with known stale or invalid current-state evidence
+  - current model evidence is legacy_review_required and the selected route requires a locked_model_spec
+
+authority_fingerprint:
+  algorithm: sha256
+  ordered_sources:
+  - core/bootstrap.yaml
+  - core/workflow_router.yaml
+  - core/module_manifest.yaml
+  - config/competition_profiles.yaml
+  - core/runtime_assurance_contract.yaml
+  - core/writing_reasoning_contract.yaml
+  - core/writing_runtime_contract.yaml
+  - templates/latex/cumcm/hsk/template_manifest.yaml
+  - modules/05_writing/paper_writing_protocol.md
+  purpose: Bind one runtime plan to the authority files that produced its routing, writing package, and assurance semantics.
+
+compatibility:
+  legacy_resolver_entrypoint: scripts/resolve_workflow.py
+  legacy_cli_supported: true
+  new_default_entrypoint: scripts/resolve_runtime.py
+  old_projects_without_state: supported_via_legacy_arguments
+  legacy_semantic_hash_read_supported: true
+  legacy_semantic_hash_is_read_only_provenance: true
+  structured_identity_is_new_write_and_lock_path: true
+  project_state_schema_change_required: already_introduced_in_phase_c2
+  workbook_schema_change_required: false
+  task_code_interface_change_required: false

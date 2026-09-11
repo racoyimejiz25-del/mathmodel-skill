@@ -20,17 +20,17 @@ ACTIVE_TEXT_DIRS = (
 )
 TEXT_SUFFIXES = {".md", ".yaml", ".yml", ".json", ".py", ".m", ".tex", ".bib"}
 OBSOLETE_ROOT_ARTIFACTS = (
-    "CHANGELOG_V621.md",
     "HSK_RUNTIME_ROUTER_V621.md",
     "HSK_SKILL_FILE_INDEX_V621.md",
     "HSK_TEMPLATE_INDEX_V621.md",
     "PROJECT_INSTRUCTIONS_HSK_V621.md",
 )
-OLD_TITLE_PHRASES = (
-    "图内不重复总标题",
-    "图内不重复放总标题",
-    "图题由 LaTeX 图注承担",
-    "图内是否没有重复总标题",
+OBSOLETE_EMBEDDED_TITLE_PHRASES = (
+    "单图使用简洁 `title`，多面板使用一个整体 `sgtitle`",
+    "单图使用 `title`，多面板使用一个 `sgtitle`",
+    "MATLAB正式图缺少title或sgtitle",
+    "data_process.m缺少title或sgtitle",
+    "MATLAB 图内可保留简洁 `title/sgtitle`",
 )
 
 
@@ -78,8 +78,10 @@ class TestStructure(unittest.TestCase):
             "core/output_contract.yaml",
             "core/workbook_schema.yaml",
             "core/project_state.schema.yaml",
+            "core/numerical_verification_contract.yaml",
             "templates/model/model_paper_framework.md",
             "scripts/validate_model_paper_framework.py",
+            "scripts/validate_numerical_evidence.py",
         ]:
             self.assertTrue((ROOT / relative).is_file(), relative)
 
@@ -119,6 +121,10 @@ class TestStructure(unittest.TestCase):
         for relative in OBSOLETE_ROOT_ARTIFACTS:
             self.assertFalse((ROOT / relative).exists(), relative)
 
+    def test_versioned_root_changelogs_are_removed(self):
+        stale = sorted(path.name for path in ROOT.glob("CHANGELOG_V*.md") if path.is_file())
+        self.assertEqual(stale, [])
+
     def test_active_files_do_not_reference_v621(self):
         stale = re.compile(r"\bv6\.2\.1\b|\bV621\b", flags=re.IGNORECASE)
         violations = []
@@ -133,7 +139,7 @@ class TestStructure(unittest.TestCase):
                         violations.append(path.relative_to(ROOT).as_posix())
         self.assertEqual(violations, [])
 
-    def test_active_files_do_not_keep_old_no_title_rules(self):
+    def test_active_files_do_not_require_embedded_formal_titles(self):
         violations = []
         skipped = {
             Path(__file__).resolve(),
@@ -149,10 +155,18 @@ class TestStructure(unittest.TestCase):
                 if path.resolve() in skipped:
                     continue
                 text = path.read_text(encoding="utf-8-sig", errors="strict")
-                for phrase in OLD_TITLE_PHRASES:
+                for phrase in OBSOLETE_EMBEDDED_TITLE_PHRASES:
                     if phrase in text:
                         violations.append(f"{path.relative_to(ROOT).as_posix()}: {phrase}")
         self.assertEqual(violations, [])
+
+    def test_formal_matlab_templates_have_no_executable_overall_title(self):
+        for relative in ("templates/matlab/q1_plot.m", "templates/matlab/data_process.m"):
+            text = (ROOT / relative).read_text(encoding="utf-8")
+            code_lines = [line.split("%", 1)[0] for line in text.splitlines()]
+            code = "\n".join(code_lines)
+            self.assertIsNone(re.search(r"\btitle\s*\(", code, flags=re.IGNORECASE), relative)
+            self.assertIsNone(re.search(r"\bsgtitle\s*\(", code, flags=re.IGNORECASE), relative)
 
     def test_gitattributes_forces_lf(self):
         attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
@@ -171,12 +185,11 @@ class TestStructure(unittest.TestCase):
     def test_result_analysis_is_registered_after_primary_solve(self):
         router = yaml.safe_load((ROOT / "core/workflow_router.yaml").read_text(encoding="utf-8"))
         manifest = yaml.safe_load((ROOT / "core/module_manifest.yaml").read_text(encoding="utf-8"))
-        for order in (
-            router["execution_contract"]["workflow_order"],
-            manifest["workflow_order"],
-        ):
-            self.assertLess(order.index("solve_validate"), order.index("result_analysis"))
-            self.assertLess(order.index("result_analysis"), order.index("figure_evidence"))
+        order = router["execution_contract"]["workflow_order"]
+        self.assertLess(order.index("solve_validate"), order.index("result_analysis"))
+        self.assertLess(order.index("result_analysis"), order.index("figure_evidence"))
+        self.assertNotIn("workflow_order", manifest)
+        self.assertNotIn("workflow_profiles", manifest)
         self.assertEqual(
             manifest["modules"]["result_analysis"]["path"],
             "modules/03_result_analysis.md",
@@ -184,15 +197,14 @@ class TestStructure(unittest.TestCase):
 
     def test_active_documentation_matches_current_skill_version_and_taxonomy(self):
         bootstrap = yaml.safe_load((ROOT / "core/bootstrap.yaml").read_text(encoding="utf-8"))
-        version = str(bootstrap["skill_version"])
         scripts_readme = (ROOT / "scripts/README.md").read_text(encoding="utf-8")
         legacy_readme = (ROOT / "legacy/README.md").read_text(encoding="utf-8")
 
-        self.assertEqual(scripts_readme.splitlines()[0], f"# Scripts v{version}")
+        self.assertEqual(scripts_readme.splitlines()[0], "# Scripts")
         for token in ("objective", "structures", "capabilities"):
             self.assertIn(token, scripts_readme)
         self.assertNotIn("主/次题型", scripts_readme)
-        self.assertIn(f"不属于 v{version} 默认运行链路", legacy_readme)
+        self.assertIn("不属于当前默认运行链路", legacy_readme)
 
 
 if __name__ == "__main__":

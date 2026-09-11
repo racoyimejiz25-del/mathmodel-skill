@@ -1,41 +1,69 @@
-skill_version: 7.0.0
+skill_version: 9.1.0
 bootstrap_schema_version: 1.1.0
-purpose: Minimal startup contract for the HSK mathematical-modeling workflow. Read this file first, then use scripts/resolve_workflow.py to obtain the deterministic task-specific execution plan. Do not preload the whole repository.
+purpose: >-
+  Minimal startup index for the HSK mathematical-modeling workflow. Read this
+  file first, load the global policy through workflow_router.default_load, then
+  use scripts/resolve_runtime.py for the assured task-specific plan. Do not preload the
+  repository or duplicate domain contracts here.
 authoritative_sources:
   global_policy: core/hsk_core_policy.md
   routing: core/workflow_router.yaml
   artifact_graph: core/module_manifest.yaml
   task_taxonomy: core/task_taxonomy.yaml
   project_state: core/project_state.schema.yaml
+  state_transitions: core/state_transition_contract.yaml
   workbook: core/workbook_schema.yaml
   output: core/output_contract.yaml
+  preprocessing: core/global_preprocessing_contract.yaml
+  model_approval: core/model_approval_contract.yaml
   user_execution: core/user_execution_contract.yaml
   code_quality: core/code_quality_contract.yaml
+  writing_reasoning: core/writing_reasoning_contract.yaml
+  writing_runtime: core/writing_runtime_contract.yaml
+  figure_evidence: modules/04_figure_evidence.md
+  review_delivery: modules/06_review_delivery.md
+  cumcm_template: templates/latex/cumcm/hsk/template_manifest.yaml
+  numerical_verification: core/numerical_verification_contract.yaml
+  semantic_governance: scripts/validate_semantic_governance.py
+  runtime_assurance: core/runtime_assurance_contract.yaml
+startup_contract:
+  principle: minimal_route_specific
+  default_policy_source: core/hsk_core_policy.md
+  resolver: scripts/resolve_runtime.py
+  rules:
+    - Bootstrap stores pointers and startup invariants only; global domain rules live in core/hsk_core_policy.md.
+    - Route-specific contracts are loaded only when the resolved task needs them.
+    - Runtime context hydration, intent provenance, artifact assurance and declarative contract dependency closure are governed by core/runtime_assurance_contract.yaml.
+    - Resolver-internal manifests and taxonomies are not user-facing preload unless the route needs their content.
+    - Current project semantics are restored from current 模型论文框架.md when available; numerical facts still come from accepted workbooks and machine state from project_state.
+    - Pure paper-writing routes use core/writing_runtime_contract.yaml plus the active template manifest and compact paper_writing_protocol; full core/writing_reasoning_contract.yaml remains the semantic fallback for complex adjudication and final review.
 hard_invariants:
-- 题意正确优先于模型高级、代码复杂和排版炫技。
-- 先审题与锁定模型，再完整求解；不得用后续分析弥补主结果精度、收敛或可行性不足。
-- 主求解必须通过独立质量门，随后才按题目风险选择敏感性、鲁棒性、多算法、结构、阈值、异质性或其他结果深化分析。
-- 结果深化分析发现主结论不可靠时，必须标记下游stale并回退模型设计或主求解。
-- 新项目默认由用户本地执行完整版主求解与结果深化代码；助手只生成代码、静态校验和验收返回工作簿，不得运行赛题代码。
-- 每问主求解与结果深化分析使用两个独立Python脚本；主工作簿accepted后冻结主求解脚本，深化分析不得覆盖改写它。
-- 禁止自动缩减数据、网格、时域、场景、重复次数、迭代或容差，禁止静默求解器fallback和轻量近似。
-- Python代码负责完整数据处理、主求解、质量门、结果深化分析与工作簿；MATLAB只读取验收后的工作簿绘图。
-- 两个正式问题脚本都必须通过core/code_quality_contract.yaml定义的代码工程质量门。
-- 默认写作链在结果与图表锁定后直接进入LaTeX；DOCX仅由用户显式请求触发，且不是LaTeX前置。
-- locked_model_spec形成后维护项目根目录当前版模型论文框架.md；旧版本由Git历史保存。
-- 每次正式产物交付前执行解析器返回的project_sync gate，先校验项目状态与模型论文框架，再按Output Contract的exact scope检查产物。
-- project_sync只允许设置或保持stale；清除stale必须由主结果质量门或结果深化分析流程在完整验证哈希覆盖后显式完成。
-- 顶层subproblem.capabilities是唯一能力事实源；旧别名只能兼容读取且必须一致。
-- DOCX、LaTeX与提交scope必须检查真实交付文件，不得以框架或状态文件替代。
-- legacy目录不参与默认执行。
+  - Global modeling, preprocessing, solving, figure, writing and review rules are governed by their authoritative sources above; bootstrap must not restate those contracts in detail.
+  - Resolve the smallest task-specific load order and stop after the user-requested deliverable; do not preload unrelated contracts or modules.
+  - Formal delivery must execute every `pre_delivery_gates` entry returned by the resolver, in resolver order; stage-specific gates such as semantic governance, project sync, and submission-package validation are examples, not a separately maintained fixed list.
+  - Current 模型论文框架.md is the assistant-readable semantic memory; accepted workbooks are numerical fact sources and project state is the machine-state source.
+  - Problem Contract freezing does not authorize task code by itself; before current model code is generated, the Model Challenge must pass and the user must explicitly approve the current semantic_revision and validated semantic_identity_hash under core/model_approval_contract.yaml; legacy semantic_hash approval is read-only provenance only.
+  - Task-specific preprocessing, solve and result-analysis code remains user-executed; the assistant generates, statically checks and validates returned artifacts under the existing execution contracts.
+  - legacy/ remains outside default execution; compatibility pointers are read-only bridges and may not become active dependencies.
 entrypoints:
-  resolve: python scripts/resolve_workflow.py
+  resolve: python scripts/resolve_runtime.py
+  resolve_legacy: python scripts/resolve_workflow.py
+  semantic_governance: python scripts/validate_semantic_governance.py
+  model_approval: python scripts/validate_model_approval.py
   sync: python scripts/sync_project.py
   validate_state: python scripts/validate_project_state.py
   validate_framework: python scripts/validate_model_paper_framework.py
   review: python scripts/score_submission.py
   validate_code_delivery: python scripts/validate_code_delivery.py
   validate_user_execution: python scripts/validate_user_execution.py
+  validate_numerical_evidence: python scripts/validate_numerical_evidence.py
+  audit_latex_project: python scripts/audit_latex_project.py
+  render_paper: python scripts/render_paper.py
+  validate_submission_package: python scripts/validate_submission_package.py
+  audit_paper_prose: python scripts/audit_paper_prose.py
+  audit_v8_writing_surface: python scripts/audit_v8_writing_surface.py
+  generate_mechanism_drawio: python scripts/generate_mechanism_drawio.py
+  validate_drawio_figure: python scripts/validate_drawio_figure.py
 repository_maintenance:
   governance: SKILL_CHANGE_GOVERNANCE.md
   mandatory_before_write: true
@@ -50,10 +78,12 @@ compatibility:
   deprecated_classification_capabilities_supported: true
   deprecated_problem_types_supported: true
   legacy_robustness_workbook_read_supported: true
+  v7_2_0_preprocessing_without_decision_read_supported: true
+  v7_0_semantic_governance_fields_optional_for_read: true
   v6_6_single_script_question_folders_read_supported: true
   versionless_active_documents:
-  - PROJECT_INSTRUCTIONS.md
-  - RUNTIME_ROUTER.md
-  - SKILL_FILE_INDEX.md
-  - TEMPLATE_INDEX.md
+    - PROJECT_INSTRUCTIONS.md
+    - RUNTIME_ROUTER.md
+    - SKILL_FILE_INDEX.md
+    - TEMPLATE_INDEX.md
   legacy_document_pointers_supported: true

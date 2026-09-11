@@ -45,8 +45,12 @@ class TestV661CodeQualityClosure(unittest.TestCase):
 
     def test_code_quality_contract_thresholds_are_preserved_for_both_scripts(self):
         data = yaml.safe_load((ROOT / "core/code_quality_contract.yaml").read_text(encoding="utf-8"))
-        current = yaml.safe_load((ROOT / "core/bootstrap.yaml").read_text(encoding="utf-8"))["skill_version"]
-        self.assertEqual(data["skill_version"], current)
+        # The code-quality domain contract keeps its own behavior/schema marker;
+        # release parity is carried globally, while this file records introduction
+        # and compatible Skill lines explicitly.
+        self.assertEqual(str(data["introduced_in_skill_version"]), "7.4.2")
+        self.assertEqual(str(data["skill_compatibility"]), ">=7.4.2,<10.0.0")
+        self.assertNotIn("skill_version", data)
         self.assertEqual(data["line_count"]["target_max"], 500)
         self.assertEqual(data["line_count"]["hard_max"], 700)
         self.assertEqual(data["line_count"]["exemption_max"], 900)

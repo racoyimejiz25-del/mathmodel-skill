@@ -1,0 +1,112 @@
+schema_version: 1.1.0
+baseline_skill_version: 8.9.0
+baseline_main_commit: f4b5bff59f77c45d53b1199e3b5d8f9b4d5620ce
+parent_plan: docs/semantic_state_runtime_refactor_plan.md
+migration_contract: docs/v900_migration_contract.md
+readiness_document: docs/phase_i_legacy_writer_retirement_readiness.md
+implementation_document: docs/phase_i_legacy_writer_retirement.md
+
+scope:
+  phase: I2_writer_retirement
+  runtime_change_authorized: true
+  legacy_writer_retirement_authorized: true
+  gate5_explicit_user_confirmation_required: true
+  gate5_explicit_user_confirmation_recorded: true
+  delete_legacy_fields: false
+  artifact_alias_cleanup_in_scope: false
+  bump_skill_version: false
+
+legacy_semantic_fields:
+  semantic_hash:
+    role: legacy_current_markdown_semantic_scope_hash
+    active_writer: false
+    historical_read: true
+    retired_writer_file: scripts/validate_semantic_governance.py
+    retirement_behavior: write_true_requires_current_sib
+    schema_current_mode: historical_read_only
+  validated_semantic_hash:
+    role: legacy_validated_markdown_semantic_scope_hash
+    active_writer: false
+    historical_read: true
+    retired_writer_file: scripts/validate_semantic_governance.py
+    retirement_behavior: write_true_requires_current_sib
+    schema_current_mode: historical_read_only
+  approved_semantic_hash:
+    role: legacy_human_approval_provenance
+    active_writer: false
+    historical_read: true
+    retirement_target: keep_narrow_historical_read
+    schema_current_mode: read_only_compatibility
+
+legacy_artifact_fields:
+  model_hash:
+    role: legacy_primary_code_hash_fallback
+    active_writer: false
+    retirement_target: remove_only_in_artifact_alias_cleanup_after_conflict_safe_migration
+    historical_reader: scripts/artifact_identity.py
+  validated_model_hash:
+    role: legacy_validated_primary_code_hash_fallback
+    active_writer: false
+    retirement_target: remove_only_in_artifact_alias_cleanup_after_conflict_safe_migration
+    historical_reader: scripts/artifact_identity.py
+
+historical_readers_to_preserve_through_initial_v9:
+  - file: scripts/validate_model_approval.py
+    surface: legacy_semantic_approval
+    guard: allow_legacy_read_only
+    active_code_authorization: false
+  - file: scripts/runtime_assurance.py
+    surface: legacy_locked_model_evidence
+    expected_status: legacy_review_required
+    active_code_authorization: false
+  - file: scripts/artifact_identity.py
+    surface: legacy_primary_code_identity_aliases
+    conflict_policy: blocking
+
+current_schema_contract:
+  file: core/project_state.schema.yaml
+  semantic_hash_description_contains: 仅历史只读兼容
+  validated_semantic_hash_description_contains: 仅历史只读兼容
+  semantic_hash_description_forbids_active_writer: 活动代码不得写入
+  validated_semantic_hash_description_forbids_active_writer: 活动代码不得写入
+  approved_semantic_hash_description_contains: 只读兼容
+  model_hash_description_contains: 活动代码无writer
+  validated_model_hash_description_contains: 活动代码无writer
+
+runtime_behavior:
+  historical_read:
+    write: false
+    legacy_identity_mode_allowed: true
+    state_mutation: false
+  active_legacy_write:
+    write: true
+    legacy_identity_mode_allowed: false
+    fail_closed: true
+    required_migration: current_valid_sib
+    entire_semantic_transaction_blocked: true
+    auto_create_sib: false
+    auto_copy_legacy_hash_to_structured: false
+    auto_inherit_human_approval: false
+  structured_write:
+    write: true
+    semantic_identity_mode: semantic_identity_v1
+    remains_supported: true
+
+forbidden_in_i2_implementation_pr:
+  - delete_legacy_field
+  - remove_historical_reader
+  - delete_model_hash_aliases
+  - delete_artifact_hashes_model
+  - delete_stale_model_alias
+  - modify_compatibility_range
+  - bump_skill_version
+  - auto_create_sib
+  - auto_inherit_human_approval
+
+phase_i_gates_after_i2:
+  stable_compatibility_window_closed: true
+  migration_fixture_baseline_present: true
+  all_targeted_legacy_semantic_writers_stopped: true
+  code_search_old_refs_only_intended_readers_validators_tests_docs: true
+  user_approved_end_v8_write_compatibility: true
+  final_migration_document_complete: false

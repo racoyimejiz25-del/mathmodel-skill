@@ -7,29 +7,60 @@ import hashlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = "6.6.1"
+BOOTSTRAP = ROOT / "core" / "bootstrap.yaml"
 SKILL_INDEX = ROOT / "SKILL_FILE_INDEX.md"
 TEMPLATE_INDEX = ROOT / "TEMPLATE_INDEX.md"
 LEGACY_SKILL_INDEX = ROOT / "HSK_SKILL_FILE_INDEX_V622.md"
 LEGACY_TEMPLATE_INDEX = ROOT / "HSK_TEMPLATE_INDEX_V622.md"
 MANIFEST = ROOT / "MANIFEST.sha256"
 EXCLUDED_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".venv", "venv"}
+EXCLUDED_FILE_SUFFIXES = {".log"}
 ACTIVE_ARCHIVE_POINTERS = {Path("legacy/README.md")}
 BINARY_SUFFIXES = {
     ".7z", ".doc", ".docx", ".gif", ".gz", ".ico", ".jpeg", ".jpg", ".mat", ".npy",
     ".npz", ".otf", ".pdf", ".pickle", ".pkl", ".png", ".rar", ".tif", ".tiff",
     ".ttf", ".woff", ".woff2", ".xls", ".xlsx", ".zip",
 }
+COMPATIBILITY_POINTERS = {
+    Path("PROJECT_INSTRUCTIONS_HSK_V622.md"),
+    Path("HSK_RUNTIME_ROUTER_V622.md"),
+    Path("HSK_SKILL_FILE_INDEX_V622.md"),
+    Path("HSK_TEMPLATE_INDEX_V622.md"),
+}
+# This fragment is part of the active CUMCM assembly and remains in the Active
+# Skill Index / MANIFEST. It is intentionally omitted only from the template
+# discovery index so it is not advertised as a standalone reusable template.
+TEMPLATE_INDEX_EXCLUDED_PATHS = {
+    Path("templates/latex/cumcm/hsk/sections/10_ai_tool_statement.tex"),
+}
 GENERATED_RELATIVE = {
     SKILL_INDEX.relative_to(ROOT),
     TEMPLATE_INDEX.relative_to(ROOT),
-    LEGACY_SKILL_INDEX.relative_to(ROOT),
-    LEGACY_TEMPLATE_INDEX.relative_to(ROOT),
     MANIFEST.relative_to(ROOT),
 }
 
 
+def current_skill_version() -> str:
+    """Read the active Skill version from the bootstrap single source of truth."""
+    if not BOOTSTRAP.is_file():
+        raise FileNotFoundError(f"bootstrap missing: {BOOTSTRAP}")
+    for raw_line in BOOTSTRAP.read_text(encoding="utf-8-sig").splitlines():
+        line = raw_line.strip()
+        if not line.startswith("skill_version:"):
+            continue
+        value = line.split(":", 1)[1].strip().strip('"\'')
+        if value:
+            return value
+    raise ValueError("core/bootstrap.yaml must declare a non-empty skill_version")
+
+
 def is_active_path(relative: Path) -> bool:
+    # Runtime/test logs are ignored delivery artifacts and must not make an
+    # index depend on a maintainer's local execution history.
+    if relative.suffix.lower() in EXCLUDED_FILE_SUFFIXES:
+        return False
+    if relative in COMPATIBILITY_POINTERS:
+        return False
     if relative.parts and relative.parts[0] == "legacy":
         return relative in ACTIVE_ARCHIVE_POINTERS
     return True
@@ -49,8 +80,26 @@ def iter_files() -> list[Path]:
     return sorted(files, key=lambda item: item.as_posix())
 
 
-def index_text(title: str, files: list[Path]) -> str:
-    lines = [f"# {title}", "", f"当前 Skill 版本：{VERSION}", "", "本索引仅覆盖活动 Skill；历史文件通过 `legacy/README.md` 追溯。", ""]
+def template_index_files(files: list[Path]) -> list[Path]:
+    """Return active template-discovery entries, excluding internal fragments."""
+    return [
+        path
+        for path in files
+        if path.parts
+        and path.parts[0] == "templates"
+        and path not in TEMPLATE_INDEX_EXCLUDED_PATHS
+    ]
+
+
+def index_text(title: str, files: list[Path], version: str) -> str:
+    lines = [
+        f"# {title}",
+        "",
+        f"当前 Skill 版本：{version}",
+        "",
+        "本索引仅覆盖活动 Skill；历史文件通过 `legacy/README.md` 追溯。",
+        "",
+    ]
     lines.extend(f"- `{path.as_posix()}`" for path in files)
     return "\n".join(lines) + "\n"
 
@@ -99,10 +148,11 @@ def manifest_text(files: list[Path], overrides: dict[Path, str]) -> str:
 
 
 def generated_payloads() -> dict[Path, str]:
+    version = current_skill_version()
     files = iter_files()
-    template_files = [path for path in files if path.parts and path.parts[0] == "templates"]
-    skill_payload = index_text("HSK Active Skill File Index", files)
-    template_payload = index_text("HSK Active Template Index", template_files)
+    template_files = template_index_files(files)
+    skill_payload = index_text("HSK Active Skill File Index", files, version)
+    template_payload = index_text("HSK Active Template Index", template_files, version)
     legacy_skill_payload = compatibility_pointer(SKILL_INDEX.name)
     legacy_template_payload = compatibility_pointer(TEMPLATE_INDEX.name)
     overrides = {

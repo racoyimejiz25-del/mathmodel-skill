@@ -1,0 +1,1562 @@
+schema_version: 1.8.0
+role: >-
+  跨数学建模竞赛的正文推理与证据治理权威。约束核心公式的来源—推导—去向、共享基础模型、
+  跨问递进、结构化简、模型/求解器/验证器角色、优化模型表达、模型建立理由与适用边界、
+  模型建立—求解—结果解释的连续叙事、问题章节内部小节架构、详略分配、图结果叙事、算法说明、
+  数值参数证据、命题预算、引用证据、术语一致性、数字与单位展示、标题主张、深化证据处置和正文必要性；
+  不规定具体题型、固定算法、固定章节名或载体排版细节。
+
+scope:
+  competitions: all
+  task_families:
+    - mechanism_geometry
+    - statistics_regression
+    - prediction_time_series
+    - optimization_operations_research
+    - network_graph
+    - simulation_dynamic_system
+    - machine_learning
+    - spatial_econometrics
+    - mixed_multi_question
+  anti_template_boundary:
+    - 不从单一优秀论文复制固定句式、算法名、章节编号或题目专属模型。
+    - 不要求所有论文设置“模型准备”、问题关系图、命题、核心模型汇总独立小节、正式算法框或统一敏感性章节。
+    - 不按固定标题数量判定论文质量；章节层级由当前论证链和真实数学结构决定。
+    - 不把“承接—建式—解释—求解—结果”固化为固定句型或固定标题；规则只抽象逻辑功能。
+    - 规则只抽象可跨题型复用的推理结构，具体章节和证据按当前赛题决定。
+
+rule_governance:
+  authority_principle: >-
+    同一规则只在其权威文件定义一次。consumer、artifact pack、checklist 与 review 模块只引用、执行或检查，
+    不复制为第二套正文规范。
+  levels:
+    hard:
+      meaning: 违反后会造成答案、数学语义、事实来源、可复现性或正式交付错误。
+      action: blocking
+      examples:
+        - accepted_workbook_number_mismatch
+        - stale_result_used_as_current
+        - missing_core_requirement
+        - unsupported_global_optimality_claim
+        - numerical_experiment_used_as_mathematical_proof
+        - unresolved_citation_key
+        - unresolved_cross_reference
+        - unbuildable_formal_latex
+    default:
+      meaning: 高质量数学建模论文的默认组织方式；题型、比赛模板、真实数学结构或用户明确要求可形成例外。
+      action: review_required_unless_justified
+      examples:
+        - cumcm_problem_restatement_background_plus_statement
+        - multi_question_analysis_by_question
+        - no_standalone_conclusion_by_default
+        - local_result_evidence_loop
+        - adaptive_core_model_summary
+        - adaptive_algorithm_presentation
+        - optimization_model_expression
+        - model_construction_rationale
+        - model_solver_validator_role_separation
+        - first_use_solver_justification
+        - solver_precondition_closure
+        - model_establishment_solution_narrative
+        - adaptive_subsection_separation
+        - section_title_minimality
+        - subsection_granularity
+        - title_claim_closure
+        - abstract_without_figures_tables_or_display_math
+    recommendation:
+      meaning: 经验性质量建议，不应作为否决条件。
+      action: warning_only
+      examples:
+        - compact_problem_background
+        - short_proof_length_budget
+        - proposition_default_budget
+        - terminology_drift_check
+        - caption_length_check
+        - paragraph_necessity_check
+  machine_mapping:
+    hard: blocking
+    default: review_required
+    recommendation: warning
+  exception_rule: >-
+    Default 或 Recommendation 的偏离必须能够由当前赛题、模板、题型、证据或用户明确要求解释；
+    不能仅为版式整齐或套用旧模板而偏离。
+
+formula_reasoning_chain:
+  required_for: core_formula_or_relation
+  chain: [source, derivation, destination]
+  source_allowed:
+    - prompt_condition
+    - definition
+    - physical_or_geometric_mechanism
+    - statistical_or_probability_principle
+    - data_generation_mechanism
+    - decision_logic_or_resource_constraint
+    - state_transition
+    - prior_formula_or_proposition
+    - verified_standard_theorem
+    - inherited_shared_model
+  source_rule: 核心公式必须能指出题意、定义、机制、数据或已验证理论依据，禁止“根据相关理论可得”后直接悬空给式。
+  derivation_rule: >-
+    推导深度按题型自适应。需要说明从前一对象/条件到当前关系的关键理由；
+    纯代数展开可压缩，不能为了形式强迫所有题写长演算。
+  destination_allowed:
+    - define_state_or_parameter
+    - feed_next_formula
+    - build_objective
+    - build_constraint
+    - derive_decision_rule
+    - reduce_feasible_region_or_dimension
+    - construct_algorithm_evaluation
+    - determine_numerical_parameter
+    - generate_result_or_validation_evidence
+    - support_figure_table_or_answer
+  destination_rule: 核心公式必须说明后续用途；若既不改变模型也不支撑求解、验证或结论，应删除、压缩或移附录。
+  formula_role_taxonomy:
+    field_role: paper_and_trace_recoverability
+    values:
+      - final_model_relation
+      - key_bridge_relation
+      - supporting_derivation
+      - routine_algebra
+    roles:
+      final_model_relation:
+        definition: 最终模型、solver、validator、决策规则或直接答案实际消费的关系。
+        paper_policy: preserve
+        summary_policy: include_by_default_when_summary_is_required_or_inline
+      key_bridge_relation:
+        definition: >-
+          不一定直接进入 solver，但连接机理、定义、证明、变换、判据、边界、降维与最终模型；
+          删除后会造成关键来源、充分性、候选域或推导链断裂。
+        paper_policy: preserve_near_the_derivation_or_transformation
+        summary_policy: include_only_when_needed_to_recover_final_model_or_solver_precondition
+      supporting_derivation:
+        definition: 对理解推导有帮助但不承担独立模型/判据/证明/solver 接口的关系。
+        paper_policy: compress_or_keep_by_detail_allocation
+        summary_policy: exclude_by_default
+      routine_algebra:
+        definition: 机械展开、重复代换、单位整理或可由相邻式直接恢复的普通代数步骤。
+        paper_policy: compress_or_omit
+        summary_policy: exclude
+        trace_policy: normally_not_registered
+    role_assignment_basis:
+      - downstream_mathematical_use
+      - dependency_break_if_removed
+      - solver_validator_or_answer_consumption
+      - proof_reduction_or_boundary_dependency
+    bridge_preservation_rule: >-
+      “不是最终 solver 方程”不等于“可删除中间式”。若某关系承担 Source→Derivation→Destination 的关键桥接，
+      或后续命题、缩域、边界、solver precondition 需要回指，它应登记为 key_bridge_relation 并保留可恢复表达。
+    anti_bloat_rule: >-
+      角色分类不是增加公式数量的配额；routine_algebra 不因新增 taxonomy 进入 Core Formula Trace，
+      supporting_derivation 仍可压缩，简单解析题不要求额外造桥接式。
+    machine_boundary:
+      may_check: [declared_role_value, declared_role_anchor_presence, stale_role_status_conflict]
+      must_not_claim: [mathematical_role_from_regex, bridge_necessity_from_formula_position, formula_correctness_from_role_label]
+
+  chain_quality_rules:
+    - 连续公式应形成逻辑链而非公式集合。
+    - “进一步可得、同理可得”只能连接确有直接数学关系的步骤，不能代替对象机制说明。
+    - 公式前解释为什么需要，公式后解释得到什么以及下一步如何使用。
+    - 核心模型汇总以 final_model_relation 为主体，只在恢复最终模型、关键边界或 solver 前提确有需要时带入少量 key_bridge_relation；不重复 supporting_derivation 与 routine_algebra。
+  internal_trace:
+    required_fields: [formula_id, question, role, source, derivation, destination, status]
+    optional_fields: [depends_on, code_anchor, workbook_evidence]
+    status_values: [closed, gap, stale]
+    rule: >-
+      内部 trace 只验证来源、依赖、去向和锚点是否存在，不用正则或关键词判断数学正确性；
+      正文不得机械显示内部合同列名。
+
+adaptive_core_model_summary:
+  governance_level: default
+  semantic_summary_mode:
+    field_role: mathematical_narrative_need
+    values: [required, inline, not_applicable]
+  modes: [required, inline, not_applicable]
+  legacy_modes_field:
+    status: deprecated_read_only_alias
+    canonical_field: semantic_summary_mode.values
+    removal_not_before_skill_version: 9.0.0
+  required_when_any:
+    - multiple_decision_or_state_variables
+    - multiple_core_equations_or_constraints
+    - optimization_or_complex_dynamic_system
+    - long_derivation_before_numerical_solver
+  inline_when:
+    - one_or_two_final_analytic_relations_are_sufficient
+    - final_decision_rule_can_close_the_derivation_without_a_separate_subsection
+  not_applicable_when:
+    - direct_readout_or_simple_calculation_without_new_model_structure
+    - later_question_fully_inherits_prior_model_and_adds_no_new_core_relation
+  summary_content:
+    include_by_default: [final_model_relation]
+    include_when_recoverability_requires: [key_bridge_relation]
+    exclude_by_default: [supporting_derivation, routine_algebra]
+    key_bridge_admission: >-
+      只有当不带该桥接关系会使最终模型的来源、关键边界、充分性、变量消元或 solver precondition 难以恢复时，
+      才在 summary 中保留；否则留在前述推导邻近位置。
+    no_formula_dump_rule: true
+
+  rule: >-
+    目标是让评委快速恢复求解器实际消费的最终模型；不得为了章节整齐强制所有小问设置同名小节。
+
+shared_foundation:
+  default: adaptive
+  activate_when_any:
+    - two_or_more_questions_share_core_state_equations
+    - two_or_more_questions_share_geometry_probability_network_or_transition_structure
+    - repeated_definition_would_make_question_one_bloated_and_later_questions_redundant
+  allowed_contents:
+    - shared_objects_and_coordinate_or_index_system
+    - shared_definitions_and_notation
+    - shared_mechanism_or_state_equations
+    - shared_probability_or_network_structure
+    - shared_decision_rule_or_evaluation_metric
+  forbidden_contents:
+    - question_specific_optimum_or_result
+    - question_specific_algorithm
+    - question_specific_decision_variable_unless_truly_shared
+    - later_question_specific_constraint_or_parameter
+  naming: dynamic
+  example_names: [模型准备, 基础模型建立, 共同机理模型, 统一概率模型, 共享状态方程, 网络基础结构]
+  rule: 章节是否独立以及名称均由当前题目决定；共享内容只定义一次，后问只写增量。
+
+cross_question_progression:
+  activate_when: actual_dependency_exists
+  paragraph_information_order:
+    - inherited_structure
+    - new_object_condition_or_requirement
+    - changed_modeling_difficulty
+    - model_and_solver_increment
+  rule: 后问不得把前问共享模型从头复制；若小问彼此独立，也不得虚构继承关系。
+  optional_relation_figure:
+    activate_when:
+      - at_least_three_questions
+      - dependency_is_substantial
+      - prose_only_dependency_map_is_inefficient
+    allowed_content: [inherited_object_or_model, new_condition, model_increment, downstream_input]
+    forbidden_content: generic_input_model_solve_plot_flowchart
+
+structure_before_algorithm:
+  principle: 高维、非线性或组合问题先检查可利用的数学结构，再决定是否需要高级优化算法。
+  check_order:
+    - exact_or_approximate_analytic_relation
+    - monotonicity_convexity_symmetry_or_invariance
+    - variable_elimination_or_dimension_reduction
+    - candidate_region_or_bound
+    - decomposition_or_hierarchical_structure
+    - combination_then_continuous_optimization
+    - prior_question_information_for_search_restriction
+    - final_solver_selection
+  writing_order: problem_structure -> simplification_or_decomposition -> effective_search_space -> algorithm
+  prohibition: 不以“变量多/问题复杂”为唯一理由直接调用GA、PSO、DE、ALNS、深度学习或其他高级方法。
+
+model_solver_validator_roles:
+  governance_level: default
+  definitions:
+    model: 数学上求什么；由状态/决策变量、关系、目标、约束、初边值或概率结构等构成。
+    solver: 如何求解或估计既定模型；包括精确求解器、数值算法、启发式、分解与局部精修。
+    validator: 如何独立检查求解结果或主张；包括替代算法、重复运行、网格/边界检查、上下界、残差或外样本验证。
+  rules:
+    - 首次正式介绍方法时必须能区分 model、solver 与 validator；不得把软件、求解器或验证算法直接写成模型类型。
+    - “计划库—主问题—连续精修”“全局搜索—局部精修”等属于求解架构，只有其本身改变数学问题定义时才可进入模型名称。
+    - 摘要、标题和问题分析若提到算法，必须保留模型本体的主位；算法数量不能替代模型信息完整性。
+    - 同一方法若兼具 solver 与 validator 角色，必须按具体实验分别说明，不能用一个名称模糊两种证据职责。
+  machine_audit_scope:
+    may_review:
+      - declared_model_type_is_only_solver_name
+      - validator_described_as_primary_model_without_model_context
+    must_not_claim:
+      - semantic_role_from_method_name_only
+      - model_type_correctness_from_keywords_only
+
+model_naming:
+  governance_level: default
+  principle: >-
+    题目专属名称可以保留，但首次正式出现时必须让评委识别其标准数学类型以及真正的核心结构；
+    专属机制用于增加辨识度，不能替代“优化、微分、回归、时间序列、图、仿真”等数学类型信息。
+  preferred_pattern:
+    - domain_mechanism_plus_standard_model_type
+    - standard_model_type_plus_domain_mechanism
+  standard_type_examples:
+    - continuous_optimization
+    - nonlinear_optimization
+    - nonsmooth_optimization
+    - mixed_integer_optimization
+    - multiobjective_optimization
+    - differential_equation
+    - regression
+    - time_series
+    - graph_network
+    - simulation_dynamic_system
+    - probabilistic_model
+  rules:
+    - 自定义模型名首次出现时，邻近文本至少一次给出标准模型类型。
+    - 模型名不应只描述结果对象或集合运算而完全看不出数学模型类别。
+    - 后文可使用简化专属名称，但必须与首次定义保持同一语义。
+  machine_audit_scope:
+    may_review:
+      - registered_model_name_missing_standard_type
+    must_not_claim:
+      - standard_model_type_from_surface_wording_without_project_semantics
+
+optimization_model_expression:
+  governance_level: default
+  applies_when_any:
+    - optimization_objective_exists
+    - scheduling_routing_allocation_control_problem
+    - decision_variables_and_feasible_region_define_solution
+  paper_information_order:
+    - standard_model_type_and_real_objective
+    - decision_variables
+    - objective_function
+    - objective_interpretation
+    - constraints_grouped_by_source
+    - adaptive_core_model_summary
+    - solver_and_validation
+  decision_variable_rule: >-
+    决策变量必须说明现实含义、单位/定义域和连续/离散属性；辅助变量可在约束附近定义，但不能让主决策变量藏在算法段。
+  objective_rule: >-
+    目标函数必须显式展示，并解释其为何等价或近似对应题目要求。多目标时必须说明量纲处理、优先级、权重或 Pareto 规则。
+  constraint_groups:
+    - physical_or_mechanism
+    - temporal
+    - resource
+    - logical_or_assignment
+    - boundary_or_feasible_domain
+    - service_risk_or_quality
+  constraint_rule: 核心约束按现实来源或数学作用组织并解释，不把一长串公式留给评委自行猜测含义。
+  summary_rule: >-
+    复杂优化模型通常在解释完变量、目标和约束后用 objective + s.t. 汇总最终可计算模型；该汇总是 recap，不能替代前述解释。
+  solver_order_rule: solver 和 validator 在模型语义闭合之后出现，不用“采用某算法”代替目标函数或约束定义。
+  abstract_minimum:
+    required_semantics:
+      - standard_model_type
+      - major_decision_variables_or_decision_object
+      - objective_function_meaning
+      - main_solver_or_solution_structure
+      - headline_result
+      - direct_answer
+    key_constraints: include_when_decisive_or_space_allows
+    rule: >-
+      优化类摘要若缺失目标函数含义，视为模型信息不闭合；不要求在摘要写完整公式，但必须让读者知道“优化什么”。
+  machine_audit_scope:
+    may_review:
+      - optimization_summary_declared_but_objective_semantics_missing
+      - solver_appears_before_declared_model_semantics_in_registered_outline
+    must_not_claim:
+      - objective_correctness_from_prose_pattern
+      - constraint_completeness_from_formula_count
+
+model_construction_rationale:
+  governance_level: default
+  principle: >-
+    重要模型结构首次进入正文时，应让评委恢复“当前问题结构还缺什么数学关系、为什么选择当前结构、
+    该结构怎样闭合缺口、在哪些条件下成立以及后续由谁消费”；不以模型名称本身代替理由。
+  required_when_any:
+    - nontrivial_model_choice
+    - nontrivial_predicate_or_state_relation
+    - approximation_or_surrogate
+    - structural_reduction
+    - competing_model_routes
+    - inherited_model_modified_for_new_question
+  rationale_chain:
+    - current_problem_structure
+    - modeling_gap
+    - chosen_mathematical_structure
+    - why_structure_closes_gap
+    - applicability_condition
+    - downstream_role
+  applicability:
+    principle: >-
+      模型适用性优先在首次建立或关键转化附近局部说明，回答“为什么当前问题结构允许使用它、适用范围是什么”；
+      默认不机械新增“模型适用性分析”独立小节。
+    allowed_basis:
+      - prompt_condition
+      - physical_or_geometric_mechanism
+      - data_structure
+      - mathematical_property
+      - scale_or_dimension
+      - approximation_regime
+      - verified_parameter_range
+    boundary_rule: >-
+      若模型关系只在有限参数、几何、样本、时间尺度、数据机制或近似条件下成立，邻近文字保留该范围；
+      不能把“当前题适用”改写成“普遍适用”。
+  reduction_language:
+    exact: 可使用“等价转化、只需考察”等严格措辞，但必须有等价/可逆依据。
+    proven_sufficient: 可说明缩减后仍保留所需最优/临界/可行对象，但必须连接证明或充分性依据。
+    heuristic: 必须说明属于启发式缩域或近似，并保留弃置域风险、验证范围或 claim scope。
+  anti_boilerplate:
+    - generic_model_is_scientific
+    - generic_model_is_widely_applicable
+    - generic_model_is_accurate_without_evidence
+    - generic_model_is_simple_and_effective
+  machine_audit_scope:
+    may_review:
+      - nontrivial_model_choice_without_declared_rationale
+      - applicability_claim_without_declared_local_basis
+      - reduction_wording_conflicts_with_declared_provenance
+    must_not_claim:
+      - model_applicability_from_model_name_only
+      - rationale_quality_from_presence_of_reason_words
+      - exactness_from_reduction_language_only
+
+solver_justification:
+  governance_level: default
+  first_use_chain:
+    - current_mathematical_structure_or_difficulty
+    - reason_solver_family_fits_or_direct_method_is_insufficient
+    - solver_role_in_current_question
+  precondition_chain:
+    - solver_required_property
+    - current_model_evidence_for_property
+    - local_or_global_scope
+    - solver_invocation
+  precondition_profiles:
+    root_or_boundary_search:
+      typical_requirements: [bracket_or_candidate_interval, sign_change_monotonicity_or_local_event_structure_when_required]
+    gradient_based:
+      typical_requirements: [usable_local_variation, differentiability_or_valid_subgradient_when_required, feasible_update_structure]
+    enumeration:
+      typical_requirements: [candidate_set_completeness_or_declared_scope]
+    decomposition:
+      typical_requirements: [subproblem_definition, mapping_to_original_model, coupling_recovery_or_residual_scope]
+    local_search:
+      typical_requirements: [initialization_scope, neighborhood_or_step_definition, local_claim_scope]
+    heuristic_or_population_search:
+      typical_requirements: [search_domain, feasibility_handling, objective_evaluation, termination, claim_scope]
+  precondition_rule: >-
+    不要求在正文复述算法教科书全部理论条件，只闭合当前求解真正依赖的关键性质；若该性质仅局部成立，
+    solver 的适用范围和最终 claim 也只能局部成立。
+  repeated_use_rule: >-
+    同一算法在后问沿用时不重复算法百科；说明继承了哪些结构，因此该算法仍适用，并只写新增编码、约束或搜索变化。
+  changed_solver_rule: >-
+    更换求解器时说明新增的离散性、非光滑、规模、不确定性、分解结构或可证明性质怎样改变了求解需求；
+    能够恢复“为什么前问 solver 不再足够”或“为什么仍然足够”。
+  alternative_method_rule: >-
+    正文写“同时采用/另用某算法”时，该方法必须实际运行且有 artifact；必须标明 baseline、alternative 或 validator 角色，
+    给出对应指标、误差、结构结论或未发现更优的范围，禁止为增加工作量观感而堆算法名。
+  failure_rule: 仅以“算法先进、收敛快、应用广泛”作为选择理由不合格，必须回到本题模型结构。
+  machine_audit_scope:
+    may_review:
+      - first_use_solver_without_declared_local_reason
+      - solver_precondition_missing_for_declared_dependency
+      - alternative_algorithm_without_declared_role_or_evidence_anchor
+    must_not_claim:
+      - solver_is_best_from_justification_text
+      - convergence_or_global_optimality_from_algorithm_name
+      - precondition_satisfaction_from_method_name_or_keywords_only
+
+model_establishment_solution_narrative:
+  governance_level: default
+  scope:
+    - model_establishment
+    - model_solution
+    - result_adjacent_interpretation
+    - within_question_subsection_architecture
+    - detail_allocation
+    - figure_result_narrative
+  principle: >-
+    已批准的模型数学语义进入正文后，应沿当前对象、关系、计算困难与证据自然推进；
+    不把变量、公式、算法和结果按合同字段拼成彼此断裂的技术报告，也不为追求流畅改写模型事实。
+  authority_links:
+    formula_semantics: formula_reasoning_chain
+    formula_roles: formula_reasoning_chain.formula_role_taxonomy
+    shared_foundation: shared_foundation
+    cross_question_progression: cross_question_progression
+    structure_before_algorithm: structure_before_algorithm
+    model_construction_rationale: model_construction_rationale
+    solver_justification: solver_justification
+    role_separation: model_solver_validator_roles
+    subsection_granularity: subsection_granularity
+    numerical_parameter_rationale: numerical_parameter_evidence
+    paragraph_necessity: paragraph_necessity
+    claim_strength: claim_strength_calibration
+  stage_separation:
+    rule: >-
+      进入“问题X模型建立与求解”后默认不重新完整复述问题分析、模型假设或题目要求；
+      只保留推动当前数学关系所需的短承接，以及某个既有假设对当前公式或边界的直接后果。
+    review_risks:
+      - repeated_problem_analysis_in_model_section
+      - repeated_assumption_list_in_model_section
+      - repeated_prompt_restatement_before_model_derivation
+  continuous_mathematical_narrative:
+    preferred_progression:
+      - inherit_current_object_or_relation
+      - identify_next_mathematical_need
+      - introduce_only_needed_object_or_quantity
+      - derive_define_or_transform_relation
+      - state_structural_or_problem_consequence
+      - continue_to_next_relation_final_model_or_solution
+    rules:
+      - 相邻公式服务同一数学任务时优先连续推演，不为每个关系机械命名一个“模型”。
+      - 一个自然段可同时承担解释、公式与下游用途，只要逻辑连续；不要求“公式一段、解释一段”。
+      - “建立A模型—建立B模型—采用C算法”的报告式罗列应重写为对象关系怎样逐步产生下一数学任务。
+      - 连续性不能成为删除边界条件、异常、反例或必要定义的理由。
+      - 连续叙事不是“越少标题越好”；真实独立的证明、结构化简、参数证据或 solver stage 若合并后降低导航性，应保留短标题。
+  formula_prose_rhythm:
+    consumes: formula_reasoning_chain
+    functional_sequence: [need, basis, formula, meaning, consequence]
+    compression_rule: >-
+      need、basis、meaning、consequence 可以合并成一到数句，不要求五个标签逐项显式出现；
+      对核心关系，邻近正文至少应让读者恢复“为什么此时需要该式”和“该式得到后下一步怎样变化”。
+    meaning_priority: >-
+      符号首次出现时先完成必要定义；符号已经定义后，公式后的正文优先解释结构作用、问题转化、可行域变化、
+      判据变化或下一计算用途，而不是逐个翻译符号。
+    low_value_patterns:
+      - source_free_related_theory_statement
+      - repeated_symbol_translation_without_new_role
+      - formula_declared_as_model_without_downstream_consequence
+  transition_function_governance:
+    principle: 不建立连接词词库；过渡句的价值由逻辑功能决定，而不是由“因此、进一步、下面”等表面词决定。
+    functional_roles:
+      - inherit
+      - gap
+      - introduce
+      - transform
+      - solve_entry
+      - result_entry
+      - interpret
+      - increment
+    rule: >-
+      模型建立、求解与结果之间的过渡至少承担一种真实逻辑功能；纯“下面建立模型、下面进行求解、接下来分析结果、
+      本节主要研究”一类管理型元话语若没有同时传递对象、困难、转化、求解入口或结果含义，应删除或并入有效句。
+    phrase_bank_forbidden: true
+  professional_heading_semantics:
+    governance_level: default
+    principle: 标题按独立数学任务划分，优先让评委从标题恢复“处理哪个对象、完成什么关系或计算动作”，而不是按论文合同字段切块。
+    preferred_pattern: object_plus_mathematical_task
+    alternative_patterns:
+      - method_plus_current_task
+      - result_or_parameter_plus_validation_task
+    action_examples: [确定, 表征, 构造, 推导, 判定, 离散, 降维, 分解, 转化, 估计, 求解, 搜索, 优化, 校准, 验证, 比较]
+    generic_heading_review_examples: [模型分析, 模型处理, 参数处理, 算法设计, 结果说明]
+    title_minimality:
+      principle: >-
+        标题只保留识别当前数学对象和任务所需的信息；父标题已经提供的“问题X、模型建立与求解、优化模型”等上下文默认不重复。
+      heading_compression_test: >-
+        删除上位研究背景、问题编号上下文或“基于/视角下/研究”等包装后，若当前数学任务仍完整，应优先采用压缩后的标题。
+      avoid:
+        - parent_context_repetition
+        - research_framing_repetition
+        - decorative_based_on_or_perspective_of
+        - generic_method_stacking
+        - title_as_full_sentence_without_navigation_gain
+      hard_character_limit: false
+    rules:
+      - 决策变量、目标函数、约束与核心模型汇总若只是同一短模型建立链，默认连续组织，不机械拆成多个三级标题。
+      - 若决策变量、目标函数、关键约束或模型汇总本身包含独立公式组、非平凡定义或后文需要明确回指的任务，可使用清晰短标题；不得为“连续叙事”强行合并。
+      - 一个公式、一张表或一个参数设置本身不自动构成独立标题。
+      - 短名词标题若能准确恢复数学任务可以保留，不强制“XX的XX”或“名词+动词”语法。
+    hard_grammar_rule: false
+  within_question_subsection_architecture:
+    governance_level: default
+    scope_boundary:
+      preserves_top_level_paper_skeleton: true
+      may_reorder_top_level_sections: false
+      may_reorder_question_sections: false
+      applies_inside:
+        - data_or_preprocessing_section_when_active
+        - shared_foundation_section_when_active
+        - question_model_establishment_solution_section
+        - local_validation_section_when_active
+    principle: >-
+      既定论文大章节结构保持不变；只在当前大章节内部，根据真实局部数学依赖与求解认知顺序安排二级/三级小节、
+      公式、solver、结果和验证。局部顺序用于恢复解题思路，不得升级为重排问题一、问题二、问题三的全文排序权。
+    ordering_basis:
+      - local_mathematical_dependency
+      - local_solution_reasoning_sequence
+      - model_before_solver
+      - evidence_before_local_conclusion
+    heading_basis:
+      - independent_mathematical_task
+      - independent_solution_stage
+      - independent_result_or_validation_role
+    adaptive_separation:
+      separate_when_any:
+        - independent_formula_group_or_nontrivial_definition
+        - independent_proposition_or_key_predicate
+        - independent_structural_reduction
+        - independent_numerical_parameter_evidence
+        - independent_solver_stage
+        - downstream_text_requires_clear_local_anchor
+        - merged_long_argument_would_reduce_recoverability
+      keep_continuous_when_all:
+        - same_argument_chain
+        - each_candidate_heading_has_little_independent_content
+        - no_downstream_anchor_need
+      optimization_profiles:
+        compact: model_construction_continuous_prose_then_solution_then_result
+        navigational: decision_variables_or_objective_or_key_constraints_or_summary_may_have_short_subheadings_when_independent
+      rule: >-
+        不把“减少标题”或“增加导航”任一方向设为默认审美；是否拆分由独立数学任务和恢复性决定，而不是由字数、标题数量或版面对称决定。
+    local_dependency_rule: >-
+      同一大章节内部若任务 B 的定义、判据、可行域、目标或计算依赖任务 A，则默认先完成 A 再展开 B；
+      solver 不早于其消费的模型结构，结果不早于计算依据，验证不早于被验证的主结果。
+    top_level_skeleton_rule: >-
+      中文国赛既有“符号说明 → 数据说明/必要数据预处理 → 共享基础模型/模型准备 → 问题一 → 问题二 → ……”
+      大章节骨架及问题顺序不由本规则改变；可选章节是否启用继续服从既有 Authority。
+    python_log_rule: >-
+      “符合求解顺序”指数学认知顺序，不是读取数据、构造缓存、并行搜索、保存文件等 Python 执行日志顺序；
+      实现细节只有改变数学方法或复现结论时才进入正文。
+    cross_question_rule: >-
+      后问对前问的真实依赖只改变后问开头的继承说明和新增数学任务，不把后问专属内容提前到前问章节，也不重排问题章节。
+    data_section_internal_order:
+      - model_required_data_object_or_field
+      - necessary_quality_treatment
+      - necessary_transform_or_constructed_quantity
+      - direct_input_to_downstream_model
+    shared_foundation_internal_order:
+      - shared_object_coordinate_or_index
+      - shared_definition
+      - shared_core_relation
+      - common_output_actually_consumed_by_later_questions
+    rules:
+      - 不按合同字段机械拆分同一条论证链。
+      - 单一公式、普通图表、单个参数或标准算法参数设置本身不足以自动形成独立标题。
+      - 三级标题只在二级小节内部存在两个以上独立数学任务、独立命题/关键算法/关键图需要锚点，或不拆分会明显降低长论证可恢复性时启用。
+      - 不为小节对称或版式整齐新增不存在的数学任务。
+      - 复杂模型若确有多个独立任务，允许使用“短而明确”的三级标题；不得为了压缩标题数把证明、关键约束与参数证据混在一个难以回指的长段中。
+    machine_audit_scope:
+      may_review:
+        - subsection_order_breaks_local_dependency
+        - subsection_overmerged_despite_independent_tasks
+        - subsection_fragmented_without_independent_task
+        - top_level_framework_reordered_by_writing_rule
+      must_not_claim:
+        - correct_subsection_order_from_heading_words_only
+        - local_dependency_from_paragraph_position_only
+        - top_level_reordering_is_allowed_for_better_flow
+        - subsection_quality_from_heading_length_or_count_only
+  detail_allocation_governance:
+    governance_level: default
+    principle: >-
+      正文篇幅按“对模型成立、求解方法、结果可信和最终答案的决定性”分配，而不是平均分配给所有公式、算法和结果；
+      详写意味着关键信息链完整，不等于字数更长。
+    expand_when_any:
+      - determines_model_structure
+      - determines_predicate_or_boundary
+      - determines_feasible_region_or_decisive_constraint
+      - nontrivial_reduction_or_transformation
+      - determines_solver_fit
+      - determines_answer
+      - determines_validation_claim
+      - likely_reviewer_challenge
+    expand_information_chain:
+      - why_needed
+      - basis_or_source
+      - derivation_or_treatment
+      - structural_result_or_downstream_effect
+    support_with_compact_complete_information:
+      - first_definition_of_major_variable
+      - necessary_parameter_source
+      - ordinary_constraint_explanation
+      - problem_specific_solver_encoding
+      - termination_or_accuracy_condition
+      - basic_interpretation_of_core_figure_or_table
+    compress_when_any:
+      - routine_algebra
+      - repeated_symbol_translation
+      - unchanged_inherited_relation
+      - generic_algorithm_background
+      - generic_algorithm_advantage
+      - nondecisive_intermediate_value
+      - simple_unit_conversion
+      - table_or_curve_repetition
+    move_to_appendix_when_any:
+      - implementation_detail
+      - exhaustive_candidate_log
+      - full_code
+      - nonessential_parameter_sweep
+      - repeated_nondecisive_figure
+    formula_rules:
+      final_model_relation: 必须保留，并让评委恢复 solver/validator/决策规则实际消费的目标、关系、约束、状态方程或判据。
+      key_bridge_relation: 若删除会造成机理—判据—证明—降维—边界—最终模型之间的关键依赖断裂，则保留其必要来源、推导与下游作用，不得仅因其不是最终 solver 输入而删除。
+      supporting_derivation: 按理解需要压缩或保留；不机械进入最终模型汇总。
+      routine_algebra: 优先压缩或省略，默认不进入 Core Formula Trace。
+      standard_relation: 只说明本题适用条件与进入当前模型的方式，不展开教科书式长介绍。
+    solver_rules:
+      expand: [solver_fit, problem_specific_encoding, objective_evaluation, constraint_handling, key_parameters_initialization_accuracy_termination, output_mapping]
+      compress: [algorithm_history, generic_advantages, unrelated_standard_update_equations, unchanged_standard_operator_detail]
+    result_rules:
+      expand: [answer_decisive_value, strategy_decisive_trend_threshold_or_turning_point, decisive_active_constraint, result_mechanism, direct_question_implication, validation_effect_on_claim]
+      compress: [table_cell_repetition, curve_point_repetition, nondecisive_auxiliary_metric, already_visible_number_without_new_interpretation]
+    no_word_count_rule: true
+    simple_problem_anti_bloat: true
+    simple_problem_rule: >-
+      若本问只有直接解析关系或简单计算，不强制增加多个小节、算法段、核心模型汇总、结果图或额外验证；
+      Detail Allocation 只能压缩和突出已有必要信息，不能制造不存在的复杂性。
+    machine_audit_scope:
+      may_review:
+        - decisive_derivation_overcompressed
+        - routine_content_overexpanded
+      must_not_claim:
+        - detail_quality_from_word_count_only
+        - derivation_completeness_from_formula_count_only
+        - importance_from_section_length_only
+  model_to_solver_bridge:
+    consumes: [structure_before_algorithm, model_construction_rationale, solver_justification, model_solver_validator_roles]
+    first_use_progression:
+      - current_model_structure_or_computational_difficulty
+      - exploitable_property_or_completed_simplification
+      - solver_required_property_and_current_scope
+      - direct_or_conventional_method_limitation_when_real
+      - solver_family_fit
+      - problem_specific_encoding_search_object_or_constraint_handling
+      - parameter_accuracy_termination_or_convergence_condition
+      - map_solver_output_back_to_model_variables
+    bridge_rule: >-
+      模型建立结束后进入 solver 时，邻近文字应至少说明最终可计算结构、求解困难、可利用性质、关键 solver 前提、搜索对象或目标评价方式之一；
+      不用“下面进行模型求解”作为唯一桥接。
+    method_introduction_rule: >-
+      标准算法未修改时只介绍与本题变量、目标、约束、参数、初值和停止规则有关的内容；
+      算法真正改进时才说明新增算子或更新规则及其对应的模型困难。
+    generic_algorithm_praise_is_insufficient: true
+  result_adjacent_interpretation:
+    principle: 核心结果出现后应在邻近位置解释其数学或现实含义，不把所有解释推迟到章节末尾，也不逐格复述表格或逐点复述曲线。
+    profiles:
+      point_optimum_or_parameter:
+        preferred_progression:
+          - key_value_or_parameter_combination
+          - actual_decision_meaning
+          - decisive_constraint_or_feasibility_status_when_relevant
+          - mechanism_or_model_reason
+          - direct_answer
+      curve_or_figure:
+        preferred_progression:
+          - identify_relation_and_local_role
+          - characterize_decisive_feature
+          - quantify_decisive_value_when_needed
+          - connect_feature_to_current_question
+          - explain_supported_reason_when_available
+          - close_to_answer_or_next_step_when_needed
+      algorithm_accuracy_or_validation:
+        preferred_progression:
+          - comparison_metric
+          - difference_or_error
+          - whether_core_conclusion_changes
+          - support_modify_or_reject_target_claim
+    rule: >-
+      上述 progression 是信息功能清单而非固定句数；根据当前证据压缩或合并，不要求每张图、每张表完整重复同一模式。
+  figure_result_narrative:
+    governance_level: default
+    functional_sequence:
+      - identify_relation_and_local_role
+      - characterize_decisive_feature
+      - quantify_decisive_value_when_needed
+      - connect_feature_to_current_question
+      - explain_supported_reason_when_available
+      - close_to_answer_or_next_step_when_needed
+    identity_rule: >-
+      图第一次进入当前结果段时，邻近正文应让评委知道图展示哪些变量/对象之间的关系以及它在当前问题中的作用；
+      不得只写“结果如图X所示”，也不逐字重复完整 caption。
+    feature_rule: >-
+      只分析决定当前结论的趋势、极值、拐点、阈值、稳定区间、分组差异、收敛区间、空间结构或异常，不逐点读图。
+    quantify_rule: >-
+      只把阈值、极值、最优点、关键区间、误差、相对变化量、关键时间/坐标等决定判断的数值带入正文；精度继续服从 Numeric Profile。
+    question_link_rule: >-
+      图分析必须说明关键特征如何缩小参数范围、选择策略、判断要求、支持当前答案或为下一局部求解步骤提供依据，不能停留在视觉描述。
+    cause_rule: >-
+      原因解释优先来自当前模型方程、约束活跃性、物理/几何机制、统计结构、资源竞争、边界效应或已证实数据规律；
+      若现有模型/证据不足以解释原因，只描述可确认现象与问题含义，不为“分析充分”编造机制。
+    closure_rule: >-
+      当图承担当前局部任务的关键证据且前文尚未完成 answer link 时，可用一句简短语言收回当前结论、参数区间、答案或下一步输入；
+      若前一句已经完成收束，不重复总结。
+    placement_preferences:
+      - introduce_local_role -> figure -> nearby_feature_value_question_link_reason -> next_local_task
+      - short_introduction -> decisive_value_when_needed -> figure -> interpretation_and_closure
+    multi_panel_rule: >-
+      多面板图先说明共同问题，再只解释各 panel 对结论有独立贡献的差异；若多个 panel 重复同一趋势，用一句综合解释即可。
+    adaptive_profiles:
+      parameter_response_or_sensitivity: [trend, threshold, stable_interval, conclusion_change]
+      optimization_convergence: [objective_change, stable_region, termination_or_accuracy_support, no_global_optimum_inference]
+      prediction_or_fit: [main_trend, decisive_deviation, abnormal_interval, error_metric_link]
+      spatial_or_network: [location_or_structure, cluster_connectivity_or_path_feature, decision_implication]
+      mechanism_or_geometry: [critical_state, relative_position, boundary_relation, predicate_link]
+    rules:
+      - not_caption_repetition
+      - not_point_by_point_reading
+      - not_fixed_sentence_count
+      - not_same_pattern_for_every_figure
+      - reason_must_be_supported_by_model_or_evidence
+      - interpretation_must_remain_local_to_current_question_or_next_local_step
+    machine_audit_scope:
+      may_review:
+        - figure_without_identity_or_local_role
+        - figure_feature_without_question_link
+        - unsupported_figure_cause
+        - detached_figure_summary
+      must_not_claim:
+        - figure_quality_from_presence_of_figure_reference_only
+        - supported_reason_from_causal_words_only
+        - result_correctness_from_visual_pattern_only
+        - narrative_quality_from_sentence_count_only
+  cross_question_language:
+    consumes: cross_question_progression
+    rule: >-
+      后问正文优先用短承接恢复已继承结构和本问新增条件，只展开新增数学关系与求解变化；
+      若前问结构在本问失效，应明确指出失效部分，不用“同理”掩盖真实变化；
+      如果 solver 沿用，说明哪些结构仍保持；如果 solver 更换，说明新增维度、离散性、耦合、非光滑或规模怎样改变求解需求；
+      这种继承只影响后问内部承接，不改变问题一、问题二、问题三等大章节的既定顺序。
+  question_section_narrative_closure:
+    governance_level: default
+    principle: >-
+      每个“问题X模型建立及求解”大章节结束前，应能从本章内部恢复“局部数学任务怎样逐步建立 → 模型如何闭合 → solver 如何消费 →
+      结果如何解释 → 本问如何被直接回答”的证据链；该检查没有权限重排全文大章节。
+    closure_checks:
+      - local_prerequisite_before_use
+      - model_rationale_recoverable_when_nontrivial
+      - model_semantics_closed_before_solver
+      - solver_preconditions_closed_when_material
+      - solver_output_mapped_to_model_variable_or_answer
+      - decisive_result_has_nearby_interpretation
+      - current_question_directly_answered
+      - local_validation_targets_declared_claim_when_present
+      - no_question_specific_content_moved_across_top_level_question_sections
+    optional_final_sentence_rule: >-
+      不机械设置“小问结论”或固定总结句；若最后一个结果/解释段已经直接回答本问，则视为闭合。
+    top_level_guard: >-
+      闭环审查只在当前问题大章节内部工作，不以“更连贯”为理由重排符号说明、数据说明、共享基础、问题一、问题二等一级大章节。
+    machine_audit_scope:
+      may_review:
+        - local_question_section_not_closed_to_answer
+        - top_level_framework_reordered_by_writing_rule
+      must_not_claim:
+        - answer_correctness_from_presence_of_summary_sentence
+        - closure_from_section_order_only
+  prose_target:
+    preferred_subjects:
+      - current_object
+      - current_relation
+      - current_condition
+      - current_result
+      - current_mathematical_task
+    reduce_repeated_subjects: [本文, 本问, 该模型, 我们]
+    analysis_sentence_should_add_one_of:
+      - why_model_structure_is_needed
+      - why_formula_is_needed
+      - model_applicability_or_boundary
+      - parameter_or_constraint_source
+      - structural_simplification_or_transformation
+      - solver_fit
+      - result_mechanism_or_reason
+      - direct_question_implication
+      - boundary_or_exception_effect
+    rule: >-
+      正文语言保持规范、朴素、具体和专业；“适当分析”必须增加数学、求解或证据信息，
+      “结果较好、模型有效、算法性能优异、符合实际”若没有具体机制、基线或范围，不构成有效分析。
+      reduce_repeated_subjects 只针对机械重复的步骤宣告，不是第一人称禁令；
+      有信息的作者视角及其表达边界按 Paper Writing Protocol §7.3 执行。
+  anti_template_boundary:
+    - 不复制任何优秀论文的固定句子、章节编号、算法或题目专属建模顺序。
+    - 不要求每个公式前出现同一承接词，不要求每段固定使用“因此/进一步/从而”。
+    - 不固定三级标题数量、流程图数量、Step 1--n、模型建立末尾总结句或图表分析三句式。
+    - 不把PSO、GA、DE、二分法、坐标搜索或任何参考论文算法设为默认 solver。
+    - 不把机理题中的某一对象顺序推广成统计、预测、网络、仿真或机器学习题的固定模板。
+    - 不把 Figure Result Narrative 固化为“图身份—特征—数值—原因—结论”的固定句数或固定措辞。
+    - 不把“模型适用性”固化为每问独立小节；适用理由优先贴近模型或 solver 首次出现处。
+    - 不把局部求解依赖升级为全文大章节重排规则。
+  machine_audit_scope:
+    may_review:
+      - report_like_model_listing
+      - model_choice_without_recoverable_gap_or_rationale
+      - applicability_claim_without_local_basis
+      - reduction_provenance_wording_conflict
+      - formula_without_need_or_consequence
+      - solver_first_narrative
+      - solver_precondition_missing_for_declared_dependency
+      - generic_heading_density
+      - heading_parent_context_repetition
+      - heading_overframed_without_navigation_gain
+      - subsection_overmerged_despite_independent_tasks
+      - subsection_fragmented_without_independent_task
+      - management_transition
+      - detached_result_interpretation
+      - repeated_problem_analysis_in_model_section
+      - subsection_order_breaks_local_dependency
+      - top_level_framework_reordered_by_writing_rule
+      - decisive_derivation_overcompressed
+      - routine_content_overexpanded
+      - figure_without_identity_or_local_role
+      - figure_feature_without_question_link
+      - unsupported_figure_cause
+      - detached_figure_summary
+      - local_question_section_not_closed_to_answer
+    must_not_claim:
+      - narrative_quality_from_connector_words_only
+      - heading_quality_from_grammar_pattern_only
+      - heading_quality_from_character_count_only
+      - solver_fit_from_algorithm_name_only
+      - solver_precondition_satisfaction_from_algorithm_name_only
+      - model_applicability_from_model_name_only
+      - result_interpretation_quality_from_distance_or_paragraph_count_only
+      - mathematical_correctness_from_prose_flow
+      - detail_quality_from_word_count_only
+      - figure_quality_from_figure_reference_only
+      - local_dependency_from_surface_order_only
+
+subsection_granularity:
+  governance_level: default
+  scope: within_question_sections_only
+  principle: >-
+    控制问题章节内部二级/三级小节的逻辑颗粒度，不限制一级章节数量。目标是同时避免机械切碎与过度合并，
+    让复杂模型具有清晰导航，让简单模型保持连续紧凑。
+  preferred_question_section_shape:
+    - model_construction
+    - model_solution
+    - result_analysis
+    - optional_validation_sensitivity_or_robustness
+  review_triggers:
+    - more_than_four_second_level_subsections_without_independent_argument_need
+    - subsection_contains_only_one_formula_table_or_figure
+    - adjacent_subsections_form_one_unbroken_argument_chain
+    - decision_variables_objective_constraints_summary_split_mechanically
+    - long_model_section_contains_multiple_independent_tasks_but_no_navigation_anchor
+    - boundary_ablation_independent_challenge_each_split_despite_same_validation_role
+  merge_preferences:
+    - thin_decision_variables_objective_constraints_and_summary -> model_construction
+    - active_boundary_and_solver_refinement -> model_solution_or_validation
+    - ablation_independent_algorithm_challenge_local_neighborhood -> result_analysis_or_validation_when_same_claim
+  separation_preferences:
+    - independent_key_predicate_or_proof -> short_local_heading
+    - independent_structural_reduction -> short_local_heading_when_navigation_improves
+    - independent_parameter_evidence -> short_local_heading_when_result_is_reused
+    - independent_solver_stage -> short_local_heading_when_control_or_search_role_differs
+  hard_count_limit: false
+  hard_title_length_limit: false
+  machine_audit_scope:
+    may_review:
+      - declared_question_subsection_count_risk
+      - declared_question_subsection_overmerge_risk
+    must_not_claim:
+      - subsection_should_merge_from_count_only
+      - subsection_should_split_from_length_only
+      - section_quality_from_heading_density_only
+
+algorithm_presentation:
+  governance_level: default
+  modes: [not_needed, stepwise, pseudocode]
+  principle: >-
+    算法流程用于恢复当前模型的真实计算逻辑，并连接数学结构、公式/命题、程序实现和结果证据；
+    不用于介绍通用算法百科，也不把 Python 源码压缩成论文伪代码。
+  closure_chain:
+    - model_structure
+    - algorithm_trace
+    - paper_algorithm_presentation
+    - python_implementation
+    - workbook_result_or_validation
+  mode_selection:
+    not_needed_when:
+      - direct_calculation_or_closed_form_solution
+      - one_shot_standard_solver_call_with_no_problem_specific_control_flow
+      - adjacent_formula_and_short_prose_already_restore_execution_logic
+    stepwise_when:
+      - multiple_mathematical_stages_exist_but_control_flow_is_not_the_main_information
+      - global_then_local_or_estimate_then_refine_pipeline
+      - calibration_inversion_postprocess_or_hierarchical_solution_pipeline
+    pseudocode_when_any:
+      - problem_specific_loop_or_branch_is_material
+      - candidate_generation_screening_or_repair_is_material
+      - graph_search_dynamic_programming_monte_carlo_or_event_iteration_requires_control_flow
+      - custom_accept_reject_neighborhood_or_termination_logic_changes_the_solution
+      - proposition_or_constraint_changes_the_candidate_set_or_branch_logic
+  admission_rule: >-
+    只有当算法块能比相邻正文更清楚地恢复真实求解链时才单列；不得为了每问结构整齐机械设置“算法1”。
+  internal_trace:
+    required_fields:
+      - algorithm_id
+      - question
+      - role
+      - inputs
+      - core_operations
+      - termination
+      - outputs
+      - presentation_mode
+      - status
+    optional_fields:
+      - state_or_decision_variables
+      - branch_or_iteration
+      - formula_anchors
+      - proposition_anchors
+      - constraint_anchors
+      - code_anchors
+      - workbook_evidence
+    status_values: [current, stale, not_applicable]
+    rule: >-
+      Trace 只记录当前真实求解结构与锚点，不把通用算法定义写入项目记忆；机器不得仅凭步骤文字判断算法数学正确性。
+  paper_rules:
+    - stepwise 每一步必须承担真实数学动作并说明向下一步传递的对象；纯“初始化/计算/输出”模板步骤应合并或删除。
+    - pseudocode 优先使用数学对象、集合、状态、判定量和约束，不写 range(len(...))、DataFrame、文件路径、日志、异常捕获等实现细节。
+    - 输入、输出、参数、终止条件必须与当前模型和真实程序一致。
+    - 若命题或公式实质改变搜索域、候选集、更新规则、分支或停止条件，应在 Algorithm Trace 中建立对应锚点。
+    - 完整 Python/MATLAB 代码仍放附录或附件，伪代码不是源码缩写。
+  semantic_change_rule: >-
+    状态定义、搜索域、更新规则、分支判据、修复策略、停止条件或模型—算法连接发生实质变化时属于 algorithm 语义变化；
+    仅字号、缩进、换行、行号等版式修改不触发数值 stale。
+  machine_audit_scope:
+    may_check:
+      - declared_presentation_mode
+      - missing_required_trace_fields_for_current_algorithm
+      - declared_formula_or_proposition_anchor_exists
+      - obvious_raw_python_syntax_in_declared_pseudocode_as_warning
+    must_not_claim:
+      - algorithm_correctness_from_step_text
+      - convergence_from_presence_of_termination_words
+      - equivalence_between_pseudocode_and_python_without_semantic_review
+
+numerical_parameter_evidence:
+  governance_level: default
+  applies_to:
+    - time_step
+    - spatial_grid
+    - discretization_points
+    - monte_carlo_samples
+    - bootstrap_repetitions
+    - truncation_order
+    - neighborhood_size
+    - lag_or_window
+    - optimization_tolerance
+    - search_resolution
+    - search_step
+    - max_iterations
+  chain: candidate_range_or_source -> accuracy_convergence_or_validation_evidence -> selection_rule -> selected_value
+  optional_second_check: selected_value -> main_result_stability
+  rationale_fields:
+    - parameter_role
+    - candidate_range_or_source
+    - evidence_metric
+    - selection_rule
+    - final_value
+    - conclusion_effect_if_relevant
+  evidence_by_family:
+    numerical_discretization: grid_or_step_convergence
+    stochastic_simulation: standard_error_confidence_interval_or_replication_stability
+    statistics_time_series: information_criterion_cross_validation_residual_or_stability
+    machine_learning: validation_curve_cross_validation_or_learning_curve
+    optimization: objective_feasibility_multi_start_and_termination_evidence
+  placement_rule: >-
+    决定当前模型可计算精度、离散近似或 solver 停止标准的关键参数，应在模型/求解邻近位置说明选择依据；
+    不把所有参数依据统一拖到章节末尾，也不逐项解释题面固定参数。
+  boundary_with_validation: >-
+    当前主计算正确性所需的离散/精度参数证据属于 03A/PQS；accepted 后现实参数扰动、场景压力或结论稳健性属于 03B。
+    参数选择证据不能因为形式上“比较了多个值”就自动升级为鲁棒性分析。
+  no_forced_sensitivity_rule: true
+  prohibition: 禁止仅用“综合考虑精度与效率，取……”替代参数依据。
+
+numeric_style_contract:
+  governance_level: default
+  principle: >-
+    数学建模竞赛中的核心答案数值必须按题目、官方格式、评分粒度和结果敏感性保持足够高的展示精度；
+    不得为了版面简洁或“可读性”擅自把已验收结果粗略舍入。若精确到小数后 6--7 位可能影响结果分，
+    摘要、正文直接答案和关键结果表必须保留相应高精度，并与标准工作簿同源。
+  high_precision_default:
+    applies_when_any:
+      - exact_numeric_answer_is_scored
+      - judging_may_compare_late_decimal_digits
+      - optimization_or_geometry_answer_requires_precise_coordinates_times_or_objective
+      - competition_or_user_requires_fixed_decimal_places
+    preferred_decimal_places_when_not_otherwise_specified: [6, 7]
+    rule: >-
+      6--7 位是高精度结果展示的常用默认区间而非无条件硬编码；若题目、模板、物理分辨率、统计不确定性或官方要求给出其他精度，以其为准。
+  consistency:
+    - 摘要、正文直接答案、核心结果表与提交结果文件的同一指标必须来自同一已验收数值事实源。
+    - 同一指标可因百分比/比例、科学计数法等表现形式不同而改变字符串，但不得改变数值含义或有效精度。
+    - 百分比与百分点必须区分；例如从 90% 升至 92% 是增加 2 个百分点，而不是增加 2%。
+    - 单位必须与数值间距、量纲和符号含义一致，避免 10m、10 m、10.00m 混用。
+    - 均值±标准差、置信区间和上下界必须说明统计含义，不把区间端点误写成点估计。
+  display_profiles:
+    abstract: 核心答案和决定性数值优先保留可评分的高精度；不得以摘要为理由强行降到 3--4 位。
+    body: 与工作簿和题目要求保持精度闭合；可在解释性非核心数字上按项目 profile 统一。
+    table: 核心结果列保留足以复核和评分的精度；同列通常统一小数位或科学计数法。
+    figure_axis: 坐标刻度以可读性为主，但关键点/阈值/标注数值不得因坐标轴格式丢失必要精度。
+    optimization_variable: 决策变量、坐标、时间、目标值按题目输出要求和评分敏感度保留高精度。
+  machine_audit_scope:
+    may_check:
+      - declared_metric_format_consistency
+      - unit_spacing_for_registered_units
+      - decimal_place_drift_for_registered_metrics
+      - ratio_percent_mixing_for_registered_metrics
+      - percentage_point_wording_pattern
+    must_not_claim:
+      - a_specific_precision_is_correct_without_profile_or_prompt_evidence
+      - statistical_significance_from_decimal_places
+      - physical_accuracy_from_display_precision
+
+terminology_governance:
+  governance_level: recommendation
+  principle: >-
+    自然语言技术术语应与符号治理同等级保持语义稳定。技术论文不以同义词丰富为目标；
+    同一量优先使用一个 canonical term，不同量即使语言相近也必须明确区分。
+  registry_fields:
+    - term_id
+    - canonical_term
+    - definition
+    - dimension_or_unit
+    - allowed_aliases
+    - discouraged_aliases
+    - confusable_terms
+    - linked_symbols
+    - scope
+    - status
+  rules:
+    - 同一 canonical term 的定义、量纲和 linked symbol 在当前语义 revision 内必须稳定。
+    - allowed alias 只能用于确有需要的简称，不能改变定义或量纲。
+    - discouraged alias 出现时只提示复查，不自动认定为数学错误。
+    - confusable terms 必须分别登记定义，避免“有效时长/总时长”“样本/场景”等近义词跨量混用。
+    - 一个 alias 不应同时映射到两个不同 canonical term；确有上下文区分时必须记录理由。
+  machine_audit_scope:
+    may_check:
+      - duplicate_term_id
+      - alias_collision
+      - discouraged_alias_occurrence
+      - local_confusable_term_interleaving
+      - undefined_registered_term_reference
+    must_not_claim:
+      - unseen_terms_are_synonyms
+      - semantic_equivalence_from_string_similarity_only
+
+multi_method_validation:
+  two_levels:
+    numerical_consistency: 目标值、误差、概率、预测值或主指标是否相近。
+    structural_consistency: >-
+      决策变量区间、活跃约束、变量排序、策略结构、重要性、系数方向、分群结构或关键结论是否一致。
+  rule: 只比较单个目标值不能自动推出模型可靠；第二层按题型选择，不要求所有模型拥有相同结构指标。
+
+claim_strength_calibration:
+  governance_level: hard_for_false_scope_default_for_wording
+  principle: >-
+    主张强度不得超过证据强度。严格证明、数值验证、基线比较、样本观察和启发式搜索具有不同证据边界；
+    摘要因信息密度高且最容易放大措辞，执行最严格的范围校准。
+  evidence_levels:
+    PROVEN:
+      evidence: rigorous_mathematical_proof
+      allowed_claims: [proves, establishes_under_stated_conditions, necessary_or_sufficient_when_proved]
+    VERIFIED_NUMERIC:
+      evidence: independent_numerical_recheck_multistart_resolution_or_boundary_validation
+      allowed_claims: [supports_within_tested_range, no_better_solution_found_in_checked_scope, numerically_consistent]
+    COMPARATIVE:
+      evidence: actually_run_baseline_or_alternative_with_comparable_metric
+      allowed_claims: [improves_by_reported_amount_against_named_baseline, performs_better_on_tested_metric]
+    OBSERVED:
+      evidence: current_sample_scenario_or_solution_observation
+      allowed_claims: [observed_in_current_case, indicates_or_suggests_with_scope]
+    HEURISTIC:
+      evidence: heuristic_or_local_search_solution_without_global_certificate
+      allowed_claims: [best_found_solution, current_certified_or_verified_solution_when_certificate_is_defined]
+  prohibited_upgrades:
+    - HEURISTIC_or_VERIFIED_NUMERIC -> global_optimum_without_certificate
+    - OBSERVED -> universal_law
+    - COMPARATIVE -> better_than_all_existing_methods
+    - numerical_consistency -> mathematical_proof
+    - untested_robustness -> strong_robustness_claim
+  chinese_wording_rules:
+    - “显著提高/显著降低”只有在统计显著性或项目已定义的显著阈值成立时使用；否则报告具体变化量或比例。
+    - “证明模型有效/证明方案最优”只有对应严格证明时使用；数值证据改写为“支持、验证、在所检验范围内保持”。
+    - “鲁棒性很强/稳定性很好”必须改写为具体扰动范围、独立挑战范围以及保持不变的主张。
+    - “全局最优”必须有严格证明、可验证全局最优性证书或与项目一致的等价证据；启发式、多启动或独立算法未发现更优不自动构成证明。
+  machine_audit_scope:
+    may_block:
+      - registered_evidence_level_conflicts_with_global_optimality_claim
+      - numerical_experiment_explicitly_called_mathematical_proof
+    may_review:
+      - strong_robustness_wording_without_declared_range_anchor
+      - significance_wording_without_declared_significance_evidence
+      - universal_comparison_without_declared_comparison_scope
+    must_not_claim:
+      - evidence_level_from_adjective_alone
+      - proof_validity_from_presence_of_proof_words
+      - statistical_significance_without_test_metadata
+
+analysis_evidence_disposition:
+  governance_level: default
+  statuses: [support, modify, reject]
+  required_fields: [evidence_id, question, method_or_source, target_claim, disposition, key_finding, required_action, paper_or_figure_anchor]
+  semantics:
+    support: 目标主张在该检验下保持，可作为正文增强证据，不扩大原主张适用范围。
+    modify: 目标主张主体仍可使用，但区间、阈值、置信度、边界、排序或文字必须修改并同步下游。
+    reject: 目标主张在该证据下不能继续原样使用；应删除该 claim、回退模型/求解或重做验证，具体由 target_claim 的重要性决定。
+  propagation_rules:
+    - reject_core_answer_or_core_model_claim -> redo_required_or_model_redesign
+    - reject_auxiliary_style_or_strength_claim -> remove_or_rewrite_claim_without_forcing_full_resolve
+    - modify -> mark_dependent_paper_fragments_stale_until_updated
+    - support -> keep_target_current_only_if_upstream_model_and_result_are_current
+  rule: >-
+    深化分析不是“做过就算验证”。每项敏感性、鲁棒性、外样本、算法一致性或压力测试都必须说明它支持、修正还是否决哪个具体主张。
+
+proposition_governance:
+  default_budget: [0, 4]
+  governance_level: recommendation
+  over_budget_action: justification_required
+  automatic_rejection_over_budget: false
+  admission_effects:
+    - reduce_dimension
+    - reduce_constraints
+    - restrict_candidate_region
+    - guarantee_feasibility
+    - justify_transformation
+    - provide_threshold_or_bound
+    - justify_model_necessity
+    - establish_solution_structure
+  rule: >-
+    命题数量由实际数学作用决定，不按小问分配。0--4 是正文阅读预算而非数学硬上限；
+    超出默认预算时应先合并同质命题、把技术引理移附录，并说明保留额外命题的必要性。
+  proof_length_recommendation: 正文连续短证明通常用自然分段和必要公式，篇幅预算只作为写作建议，不作为数学有效性的判断。
+
+proposition_downstream_consequence:
+  required_when_proposition_is_used_for_computation: true
+  allowed_consequences:
+    - reduce_dimension
+    - reduce_constraints
+    - restrict_candidate_region
+    - guarantee_feasibility
+    - justify_transformation
+    - provide_threshold_or_bound
+    - justify_model_necessity
+  rule: 证明后应说明它怎样改变后续模型或计算，而不是只写“命题得证”。
+
+citation_evidence:
+  principle: >-
+    参考文献只支撑外部来源型主张，不替代本文自己的推导、工作簿结果和数值验证；
+    每个需要外部证据的核心 claim 应能回到实际 citation key 与使用位置。
+  claim_types:
+    prompt_or_attachment_fact:
+      citation: usually_not_required
+    own_derivation:
+      citation: not_required
+    own_numerical_result:
+      citation: not_required
+    standard_model_or_method_origin:
+      citation: required_or_recommended
+    nontrivial_standard_theorem:
+      citation: required_and_conditions_verified
+    external_empirical_parameter:
+      citation: required
+    external_dataset_or_domain_fact:
+      citation: required
+    algorithm_origin_when_material_to_method:
+      citation: required_or_recommended
+    comparison_with_prior_research:
+      citation: required
+  preferred_source_order:
+    - official_document_or_primary_dataset
+    - original_research_paper
+    - formal_standard_textbook_or_monograph
+    - high_quality_review
+    - secondary_source_when_no_better_source_exists
+  project_trace_fields: [claim_id, claim_or_source_object, claim_type, citation_key, paper_location, status]
+  status_values: [current, pending, stale, not_required]
+  closure_rules:
+    - required_claim_has_existing_bib_key
+    - citation_key_is_used_in_paper_or_explicitly_retained_for_documented_reason
+    - external_parameter_explains_how_source_value_is_adapted_to_current_problem
+    - cited_theorem_verifies_current_problem_conditions
+    - own_result_is_not_replaced_by_external_citation
+  machine_audit_scope:
+    may_check:
+      - missing_bib_key_for_existing_cite
+      - duplicate_bib_key
+      - unused_bib_entry_as_warning
+      - suspicious_nocite_all
+    must_not_claim:
+      - source_quality_from_domain_name_only
+      - semantic_support_of_claim_from_citation_presence_only
+      - theorem_applicability_from_regex
+
+title_claim_gate:
+  governance_level: default
+  principle: >-
+    标题中的研究对象、主方法、核心机制或贡献性表述必须与全文真实主线一致，禁止仅在末尾附加一次某方法却在标题中将其包装为全文核心。
+  claim_types: [research_object, main_method, core_mechanism, core_contribution]
+  required_fields: [title_claim_id, claim_text, claim_type, related_questions, body_anchor, result_evidence, abstract_anchor, keyword_link, status]
+  closure_rules:
+    - selected_title_has_registered_substantive_claims
+    - main_method_or_contribution_claim_serves_at_least_one_core_question
+    - main_method_or_contribution_claim_has_substantive_model_or_algorithm_use
+    - title_claim_has_result_evidence
+    - abstract_does_not_overstate_title_claim
+    - keyword_set_is_consistent_with_selected_title_and_actual_main_model
+  machine_audit_scope:
+    may_check:
+      - missing_title_claim_fields
+      - missing_declared_anchor
+      - title_keyword_registry_mismatch
+    must_not_claim:
+      - a_method_is_truly_the_main_contribution_from_word_frequency_only
+      - novelty_from_title_wording
+
+paragraph_necessity:
+  governance_level: recommendation
+  functions:
+    - problem_requirement
+    - mechanism
+    - mathematical_relation
+    - solver_basis
+    - result_evidence
+    - necessary_boundary
+  rule: >-
+    每一段正文至少承担一种不可替代的信息功能。若删去后不丢失题意、机制、数学关系、求解依据、结果证据或必要边界，
+    应优先删除、合并或移附录。该规则是 Formula Destination 在段落层的对应物。
+    建模选择、取舍及数学作用的解释按 Paper Writing Protocol §5/7--9 纳入这些信息功能；
+    没有新增公式或数值不等于冗余，清理后仍须能恢复选择理由和成立边界。不新增项目必填记录。
+  common_removal_targets:
+    - generic_algorithm_history
+    - textbook_definition_without_current_use
+    - repeated_background
+    - repeated_model_strength
+    - repeated_question_summary
+    - decorative_process_description
+    - repeated_numbers_without_new_interpretation
+    - explanation_of_formula_with_no_downstream_use
+  machine_audit_scope:
+    may_warn:
+      - highly_similar_adjacent_paragraphs
+      - generic_algorithm_exposition_without_local_variable_or_constraint_terms
+      - repeated_result_number_sentence
+      - repeated_meta_summary
+    must_not_do:
+      - automatically_delete_text
+      - infer_paragraph_semantic_necessity_from_regex_only
+
+paper_fragment_stale_governance:
+  governance_level: hard
+  principle: >-
+    论文 stale 应按真实依赖局部传播。Q3 约束或结果变化时，只使依赖 Q3 的正文、图表、摘要片段、模型评价和标题主张 stale；
+    不把无依赖的背景、Q1、Q2 或其他参考文献机械判 stale。
+  fragment_kinds:
+    - paper_section
+    - question_model_text
+    - question_result_text
+    - figure_or_table_claim
+    - abstract_claim
+    - model_evaluation_claim
+    - title_claim
+    - keyword_claim
+  required_fields: [fragment_id, kind, scope, depends_on, anchor, status]
+  status_values: [current, stale, not_applicable]
+  propagation_rule: upstream_stale -> dependent_fragments_stale
+  framework_sync_semantics: >-
+    paper_framework.sync_status 只表示框架已经同步记录当前项目状态，不代表其中每个 paper fragment 都为 current；
+    允许框架 current 而某个依赖片段 stale，正式交付前必须消除交付范围内的 stale fragments。
+
+prose_style:
+  name: evidence_driven_undergraduate_academic
+  target: >-
+    规范、朴素、技术含义稳定；允许有依据的观察、发问、判断、取舍、简化、引入、解释与验证，
+    不追求期刊式抽象包装，也不通过聊天化或代词频率制造“人工感”。
+  preferred_sentence_flow:
+    - concrete_object_or_condition
+    - current_mathematical_difficulty
+    - mathematical_treatment
+    - obtained_information_or_next_use
+  allow_natural_connectors: [根据, 因此, 由此, 进一步, 从而, 此时, 结合, 从表中可以看出]
+  connector_policy: 这些词不是禁词；只在机械重复、无逻辑推进或句法同构时复查。
+  avoid:
+    - repeated_meta_navigation
+    - abstract_jargon_stacking_without_object_support
+    - frequent_self_negation_or_disclaimer
+    - deliberate_grammar_degradation
+    - mechanical_synonym_replacement
+    - unsupported_boastful_claim_strength
+  human_reasoning_trace:
+    prose_authority: modules/05_writing/paper_writing_protocol.md#7.3-作者视角与建模解释
+    principle: >-
+      作者声音用于显式呈现可核查的建模认知动作，而不是增加第一人称频率、模拟聊天语气、
+      暗示作者身份或替代公式、数据、证明与验证证据。
+    speech_acts:
+      - observation
+      - open_question
+      - inquiry
+      - judgment
+      - choice
+      - reduction
+      - introduction
+      - derivation
+      - interpretation
+      - validation
+      - qualification
+    allow:
+      - 指出当前还缺哪个量、条件、判据或证据
+      - 说明某关系为何能缩小搜索范围或改变可行域
+      - 说明两个区间、对象、方案或约束为何需要进一步比较
+      - 说明由某一结果引出的下一步建模、求解或验证动作
+      - 解释非显然变量、指标、近似、solver 或约束的当前选择依据
+      - 区分已证事实、数据事实、有依据判断、解释性推测与待验证猜想
+    question_closure:
+      allowed_outcomes:
+        - answered_by_downstream_operation
+        - explicitly_deferred_to_named_validation
+        - retained_as_unverified_hypothesis
+      prohibition:
+        - rhetorical_question_without_mathematical_destination
+      rule: >-
+        自然发问必须进入相邻推导、真实检验、明确后续任务，或清楚保留为当前未验证问题；
+        不得以问句制造探究感后在缺少证据时直接宣布答案。
+    subject_roles:
+      author_we: local_reasoning_action
+      paper_this_work: paper_scope_or_contribution
+      object_subject: established_mathematical_or_empirical_fact
+      quota: none
+      rule: >-
+        “我们”“本文”与对象/结果主语都可合法使用；按当前语义功能自然选择，
+        不批量互换，也不因正式性偏好统一成某一主语。
+    claim_strength_alignment:
+      levels:
+        - mathematical_fact
+        - empirical_fact
+        - evidence_supported_judgment
+        - interpretive_hypothesis
+        - unverified_conjecture
+      rule: prose_claim_strength_must_not_exceed_evidence_strength
+      boundary: >-
+        已证明数学事实和已核验数值通常直接陈述；“我们认为”适合有依据的建模取舍与评价，
+        不能把启发式解、图像共现或有限样本观察升级为全局最优、因果、普遍规律或严格证明。
+    necessity_tests:
+      - reasoning_necessity
+      - problem_specificity
+    necessity_rule: >-
+      删除作者声音句后若不丢失选择理由、当前缺口、数学作用、验证目标或结论边界，应压缩、换主语或删除；
+      若替换研究对象后句子仍可原样用于任意赛题，应优先回到当前机制、数据、约束或评价目标重写。
+    prohibit:
+      - pronoun_frequency_target
+      - authorship_inference_from_voice
+      - fabricated_team_consensus
+      - fabricated_trial_and_error_history
+      - rhetorical_question_without_followup
+      - causal_upgrade_from_visual_pattern_only
+      - heuristic_to_global_optimum_upgrade
+      - forced_first_person_in_simple_problem
+      - fixed_phrase_rotation_for_human_impression
+
+problem_background:
+  governance_level: recommendation
+  default: one_paragraph
+  allow_second_short_paragraph_when: reality_background_to_specific_research_object_needs_semantic_narrowing
+  second_paragraph_must: narrow_object_or_core_conflict
+  forbidden_second_paragraph: document_structure_or_chapter_management_only
+
+model_evaluation:
+  governance_level: recommendation
+  strengths_typical: [2, 4]
+  weaknesses_typical: [1, 2]
+  count_relation_required: false
+  rule: 优点有证据、缺点说明影响对象与边界；数量按实际模型决定，不检查“优点必须多于缺点”。
+
+machine_audit_boundary:
+  report_only_for_semantic_style_risks: true
+  may_warn:
+    - dense_formula_blocks_with_little_prose
+    - repeated_further_obtain_or_similarly_obtain
+    - repeated_meta_navigation
+    - repeated_cross_question_redefinition
+    - unexplained_numeric_parameter_assignment
+    - repeated_identical_question_opening_pattern
+    - unused_bibliography_entry
+    - terminology_drift
+    - numeric_style_drift
+    - unreferenced_label_or_equation
+    - unusually_long_caption
+    - paragraph_redundancy_risk
+    - raw_python_like_pseudocode
+    - management_transition
+  may_review:
+    - default_structure_deviation_without_justification
+    - title_claim_without_complete_declared_evidence
+    - abstract_contains_figure_table_or_display_math_without_exception
+    - algorithm_presentation_mode_inconsistent_with_declared_trace
+    - optimization_abstract_missing_objective_semantics
+    - optimization_section_role_or_order_risk
+    - model_construction_rationale_missing
+    - model_applicability_basis_missing
+    - solver_first_use_without_local_justification
+    - solver_precondition_missing_for_declared_dependency
+    - question_subsection_fragmentation_risk
+    - question_subsection_overmerge_risk
+    - heading_parent_context_repetition
+    - heading_overframed_without_navigation_gain
+    - strong_claim_without_declared_evidence_scope
+    - report_like_model_listing
+    - formula_without_need_or_consequence
+    - solver_first_narrative
+    - generic_heading_density
+    - detached_result_interpretation
+    - repeated_problem_analysis_in_model_section
+    - subsection_order_breaks_local_dependency
+    - top_level_framework_reordered_by_writing_rule
+    - decisive_derivation_overcompressed
+    - routine_content_overexpanded
+    - figure_without_identity_or_local_role
+    - figure_feature_without_question_link
+    - unsupported_figure_cause
+    - detached_figure_summary
+    - local_question_section_not_closed_to_answer
+  may_block:
+    - deterministic_structural_error_such_as_missing_citation_key_or_duplicate_label
+    - unresolved_cross_reference
+    - registered_evidence_scope_conflicts_with_global_optimality_claim
+  must_not_claim:
+    - mathematical_correctness_from_regex
+    - formula_source_semantic_validity_from_keywords_only
+    - parameter_optimality_from_prose_only
+    - citation_semantic_support_from_key_presence_only
+    - terminology_equivalence_from_string_similarity_only
+    - physical_or_statistical_accuracy_from_decimal_places_only
+    - algorithm_correctness_or_convergence_from_pseudocode_shape_only
+    - model_type_correctness_from_method_name_only
+    - subsection_quality_from_heading_count_only
+    - subsection_quality_from_heading_length_only
+    - narrative_quality_from_connector_words_only
+    - heading_quality_from_surface_grammar_only
+    - heading_quality_from_character_count_only
+    - detail_quality_from_word_count_only
+    - figure_narrative_quality_from_figure_reference_only
+    - local_dependency_from_surface_order_only
+    - top_level_reordering_permission_from_local_dependency_only
+    - author_reasoning_quality_from_pronoun_frequency_or_question_marks
+    - authorship_or_ai_usage_from_author_voice_style
+    - question_closure_from_surface_phrase_presence_only
+    - problem_specificity_from_object_name_overlap_only
+    - model_applicability_from_model_name_or_adjective_only
+    - solver_precondition_satisfaction_from_algorithm_name_only
+
+authority_boundaries:
+  reasoning_authority: core/writing_reasoning_contract.yaml
+  template_structure_authority: templates/latex/cumcm/hsk/template_manifest.yaml
+  prose_and_section_authority: modules/05_writing/paper_writing_protocol.md
+  latex_adapter: modules/05_writing/latex.md
+  compact_runtime: core/writing_runtime_contract.yaml
+  docx_role: 只定义 Word 审阅载体与排版差异，不复制正文规则。
+  ai_cleanup_role: 只识别模板化、空泛、重复、推理呈现风险，不建立第二套正文规则。
+  review_role: 只映射 Authority 到检查级别与交付判定，不重新定义写作规范。
+  artifact_pack_role: 只定义加载条件、输入、输出、编译或载体特有验收，不复制正文规范。
+  project_framework_role: 只保存当前项目事实、选择、状态和证据位置，不保存跨项目写作手册。
+
+v8_compatibility:
+  legacy_latex_structure_authority:
+    status: deprecated_read_only
+    old_pointer: modules/05_writing/latex.md
+    replacements:
+      fixed_structure: templates/latex/cumcm/hsk/template_manifest.yaml
+      ordinary_prose: modules/05_writing/paper_writing_protocol.md
+      latex_rendering: modules/05_writing/latex.md
+    removal_not_before_skill_version: 9.0.0
+  adaptive_core_model_summary:
+    status: readable_compatibility_mapping
+    semantic_summary_mode_field: adaptive_core_model_summary.semantic_summary_mode.values
+    legacy_semantic_alias_field: adaptive_core_model_summary.modes
+    rendering_mode_field: templates/latex/cumcm/hsk/template_manifest.yaml#core_model_summary_rendering.rendering_mode.values
+    semantic_to_rendering_mode:
+      required: displayed
+      inline: inline
+      not_applicable: omitted
+    old_to_new_modes:
+      required: displayed
+      inline: inline
+      not_applicable: omitted
+    legacy_mapping_field:
+      status: deprecated_read_only_alias
+      canonical_field: semantic_to_rendering_mode
+      removal_not_before_skill_version: 9.0.0
+    authority: templates/latex/cumcm/hsk/template_manifest.yaml#core_model_summary_rendering
+  project_migration:
+    automatic_rewrite: false
+    overwrite_filled_body: false
+    guide: docs/v8_writing_migration.md

@@ -1,3 +1,4 @@
+import copy
 import unittest
 from pathlib import Path
 
@@ -13,43 +14,100 @@ class TestSchemas(unittest.TestCase):
         example = yaml.safe_load((ROOT / "state/project_state.example.yaml").read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
         self.assertEqual(list(Draft202012Validator(schema).iter_errors(example)), [])
+        self.assertEqual(example["semantic_governance_version"], "1.0.0")
 
     def test_classification_has_single_capability_source_and_split_status(self):
         schema = yaml.safe_load((ROOT / "core/project_state.schema.yaml").read_text(encoding="utf-8"))
         defs = schema["$defs"]
-        self.assertEqual(schema["version"], "7.0.0")
+        self.assertTrue(str(schema["version"]))
         self.assertEqual(set(defs["classification"]["required"]), {"objective", "structures"})
+        self.assertEqual(set(defs["dependency_kind"]["enum"]), {"data", "parameter", "model", "result"})
+        self.assertEqual(set(defs["preprocessing_decision"]["enum"]), {"not_needed", "question_local", "project_level"})
+        self.assertEqual(defs["proposition_entry"]["properties"]["id"]["pattern"], "^P[1-9][0-9]*$")
         subproblems = schema["properties"]["subproblems"]
         sub_required = set(subproblems["additionalProperties"]["required"])
         self.assertEqual(subproblems["minProperties"], 1)
         for name in ("capabilities", "result_quality_status", "result_analysis_status"):
             self.assertIn(name, sub_required)
         fields = subproblems["additionalProperties"]["properties"]
-        for name in ("code", "result_analysis_code", "primary_code_sha256", "analysis_code_sha256"):
+        for name in (
+            "code", "result_analysis_code", "primary_code_sha256", "analysis_code_sha256",
+            "depends_on", "problem_contract_status", "semantic_closure_status",
+            "complexity_sanity_status", "semantic_revision", "semantic_change_categories",
+            "semantic_hash", "validated_semantic_hash",
+        ):
             self.assertIn(name, fields)
+        self.assertNotIn("maxItems", fields["proposition_refs"])
         phases = set(schema["properties"]["project"]["properties"]["current_phase"]["enum"])
         statuses = set(subproblems["additionalProperties"]["properties"]["status"]["enum"])
+        self.assertIn("data_preprocessing", phases)
         self.assertIn("result_analysis", phases)
         self.assertIn("analyzed", statuses)
-        self.assertIn("result_analysis_workbook", defs["artifact_hashes"]["properties"])
+        artifact_hash_properties = defs["artifact_hashes"]["properties"]
+        self.assertIn("result_analysis_workbook", artifact_hash_properties)
+        self.assertIn("primary_code", artifact_hash_properties)
+        self.assertIn("analysis_code", artifact_hash_properties)
+        self.assertNotIn("model", artifact_hash_properties)
+        self.assertNotIn("model_hash", fields)
+        self.assertNotIn("validated_model_hash", fields)
+        self.assertNotIn("model", defs["artifact_layer"]["enum"])
+        self.assertIn("preprocessing", schema["properties"])
+
+    def test_project_state_rejects_retired_implementation_aliases(self):
+        schema = yaml.safe_load((ROOT / "core/project_state.schema.yaml").read_text(encoding="utf-8"))
+        example = yaml.safe_load((ROOT / "state/project_state.example.yaml").read_text(encoding="utf-8"))
+        validator = Draft202012Validator(schema)
+        digest = "a" * 64
+
+        mutations = []
+
+        with_artifact_alias = copy.deepcopy(example)
+        with_artifact_alias["subproblems"]["Q1"]["artifact_hashes"]["model"] = digest
+        mutations.append(with_artifact_alias)
+
+        with_validated_alias = copy.deepcopy(example)
+        with_validated_alias["subproblems"]["Q1"]["validated_artifact_hashes"]["model"] = digest
+        mutations.append(with_validated_alias)
+
+        with_model_hash = copy.deepcopy(example)
+        with_model_hash["subproblems"]["Q1"]["model_hash"] = digest
+        mutations.append(with_model_hash)
+
+        with_validated_model_hash = copy.deepcopy(example)
+        with_validated_model_hash["subproblems"]["Q1"]["validated_model_hash"] = digest
+        mutations.append(with_validated_model_hash)
+
+        with_stale_alias = copy.deepcopy(example)
+        with_stale_alias["subproblems"]["Q1"]["stale_layers"] = ["model"]
+        mutations.append(with_stale_alias)
+
+        for candidate in mutations:
+            with self.subTest(candidate=candidate["subproblems"]["Q1"]):
+                self.assertTrue(list(validator.iter_errors(candidate)))
 
     def test_workbook_schema_has_quality_gate_and_adaptive_analysis(self):
         schema = yaml.safe_load((ROOT / "core/workbook_schema.yaml").read_text(encoding="utf-8"))
-        self.assertEqual(schema["schema_version"], "2.2.1")
+        self.assertEqual(schema["schema_version"], "2.3.0")
         self.assertIn(">=6.3.2", schema["skill_compatibility"])
-        self.assertIn("<8.0.0", schema["skill_compatibility"])
+        self.assertIn("<10.0.0", schema["skill_compatibility"])
         self.assertEqual(schema["classification_contract"]["capabilities_source"], "subproblem.capabilities")
         runtime = schema["runtime_enforcement"]
         self.assertNotIn("artifact_checker", runtime)
         self.assertEqual(runtime["code_delivery_checker"], "scripts/validate_code_delivery.py")
         self.assertEqual(runtime["returned_workbook_checker"], "scripts/validate_user_execution.py")
+        self.assertEqual(runtime["numerical_evidence_checker"], "scripts/validate_numerical_evidence.py")
+        self.assertEqual(runtime["numerical_evidence_authority"], "core/numerical_verification_contract.yaml")
         self.assertIn("objective_profiles", schema["solution_workbook"])
         self.assertIn("structure_profiles", schema["solution_workbook"])
         self.assertIn("主结果质量门", schema["solution_workbook"]["common_required_sheets"])
         self.assertIn("运行配置", schema["solution_workbook"]["common_required_sheets"])
+        quality = schema["solution_workbook"]["common_required_sheets"]["主结果质量门"]
+        self.assertIn("Verification ID", quality["optional_columns"])
+        self.assertIn("阈值来源", quality["optional_columns"])
         rules = "\n".join(runtime["rules"])
         self.assertIn("质量门允许记录未通过项", rules)
-        self.assertIn("只有主结果质量门全部通过", rules)
+        self.assertIn("适用的主数值证据复核通过", rules)
+        self.assertIn("不得被主质量门提前吸收", rules)
         self.assertIn("不得进入下游", schema["solution_workbook"]["role"])
         analysis = schema["result_analysis_workbook"]
         self.assertEqual(set(analysis["common_required_sheets"]), {"运行配置", "分析设计", "结论稳定性汇总"})
@@ -60,44 +118,79 @@ class TestSchemas(unittest.TestCase):
 
     def test_output_contract_defines_split_result_policy(self):
         contract = yaml.safe_load((ROOT / "core/output_contract.yaml").read_text(encoding="utf-8"))
-        self.assertEqual(contract["version"], "7.0.0")
+        current = str(yaml.safe_load((ROOT / "core/bootstrap.yaml").read_text(encoding="utf-8"))["skill_version"])
+        self.assertEqual(str(contract["version"]), current)
         self.assertEqual(contract["code_quality_contract"], "core/code_quality_contract.yaml")
-        self.assertEqual(contract["project_sync"]["role"], "formal_pre_delivery_gate")
+        self.assertEqual(contract["preprocessing_contract"], "core/global_preprocessing_contract.yaml")
+        self.assertEqual(contract["numerical_verification_contract"], "core/numerical_verification_contract.yaml")
+        self.assertEqual(contract["semantic_governance"]["authority"], "scripts/validate_semantic_governance.py")
+        self.assertEqual(contract["semantic_governance"]["dependency_kind_authority"], "core/project_state.schema.yaml#/$defs/dependency_kind")
+        self.assertEqual(contract["project_sync"]["role"], "formal_pre_delivery_gate_after_semantic_governance")
         self.assertEqual(contract["project_sync"]["stage_requirements_semantics"], "exact_scope")
+        self.assertEqual(
+            contract["project_sync"]["conditional_stage_requirements_semantics"],
+            "additive_when_condition_true_without_changing_base_exact_scope",
+        )
         self.assertEqual(contract["project_sync"]["implicit_phase_sync_semantics"], "status_minimum_only")
         self.assertTrue(contract["project_sync"]["formal_scope_requires_explicit_flag"])
-        self.assertEqual(
-            contract["project_sync"]["formal_state_requirements"],
-            {
-                "result_quality_status": "passed",
-                "result_analysis_status": "passed",
-                "downstream_artifacts_stale": False,
-            },
-        )
+        formal = contract["project_sync"]["formal_state_requirements"]
+        self.assertEqual(formal["result_quality_status"], "passed")
+        self.assertEqual(formal["result_analysis_status"], "passed")
+        self.assertFalse(formal["downstream_artifacts_stale"])
+        self.assertFalse(formal["v0_8_delivery_paper_fragments_stale"])
         self.assertEqual(set(contract["model_paper_framework"]["modes"]), {"compact", "full"})
         policy = contract["result_policy"]
         self.assertTrue(policy["primary_quality_gate_required"])
         self.assertTrue(policy["failed_quality_evidence_persisted"])
         self.assertTrue(policy["downstream_admission_requires_quality_passed"])
+        self.assertEqual(policy["primary_numerical_validity_authority"], "core/numerical_verification_contract.yaml")
         self.assertEqual(set(policy["result_analysis_outcomes"]), {"passed", "failed", "redo_required"})
         self.assertTrue(policy["fixed_perturbation_forbidden"])
         self.assertEqual(
             set(contract["project_sync"]["artifact_hash_layers"]),
-            {"data", "model", "solution_workbook", "result_analysis_workbook", "matlab_script", "figure_bundle", "framework"},
+            {
+                "raw_data", "preprocessing_decision", "preprocessing_code", "preprocessing_workbook",
+                "preprocessing_matlab_script", "primary_code", "analysis_code", "solution_workbook",
+                "result_analysis_workbook", "matlab_script", "figure_bundle", "framework",
+            },
         )
+        conditional = contract["project_sync"]["conditional_stage_requirements"]
+        self.assertEqual(
+            conditional["preprocessing_decision_project_level"]["condition"],
+            "preprocessing_decision == project_level",
+        )
+        self.assertIn("preprocessing_workbook", conditional["preprocessing_decision_project_level"]["results"])
+        self.assertIn("preprocessing_matlab_script", conditional["preprocessing_decision_project_level"]["figures"])
+        self.assertIn("preprocessing_matlab_script", conditional["preprocessing_decision_project_level"]["latex"])
         per_question = contract["per_question"]
         self.assertEqual(set(per_question["mandatory_workbooks"]), {"solution", "result_analysis"})
         self.assertEqual(per_question["question_directory"], "问题{中文序号}求解/")
         self.assertEqual(len(per_question["exact_default_files"]), 5)
-        self.assertEqual(
-            set(per_question["python_scripts"]),
-            {"primary", "result_analysis"},
-        )
+        self.assertEqual(set(per_question["python_scripts"]), {"primary", "result_analysis"})
         self.assertNotIn("single_python_update_policy", per_question)
         self.assertTrue(per_question["no_auxiliary_files_by_default"])
-        self.assertEqual(contract["writing_policy"]["default_mode"], "latex_first")
-        self.assertEqual(contract["writing_policy"]["docx_mode"], "explicit_only_independent")
-        self.assertFalse(contract["writing_policy"]["docx_is_latex_prerequisite"])
+        self.assertEqual(
+            contract["global_preprocessing"]["exact_default_files"],
+            ["数据预处理.py", "数据预处理结果.xlsx", "data_process.m"],
+        )
+
+        writing = contract["writing_policy"]
+        self.assertEqual(writing["default_mode"], "latex_first")
+        self.assertEqual(writing["docx_mode"], "explicit_only_independent")
+        self.assertFalse(writing["docx_is_latex_prerequisite"])
+        self.assertEqual(writing["expression_authority"], "modules/05_writing/paper_writing_protocol.md")
+        self.assertEqual(writing["template_authority"], "templates/latex/cumcm/hsk/template_manifest.yaml")
+        self.assertEqual(writing["latex_adapter"], "modules/05_writing/latex.md")
+        self.assertEqual(writing["compact_runtime_contract"], "core/writing_runtime_contract.yaml")
+        self.assertEqual(writing["reasoning_contract"], "core/writing_reasoning_contract.yaml")
+        self.assertEqual(writing["rule_governance"], "core/writing_reasoning_contract.yaml#rule_governance")
+        self.assertEqual(writing["citation_evidence_contract"], "core/writing_reasoning_contract.yaml#citation_evidence")
+        self.assertEqual(writing["proposition_governance"], "core/writing_reasoning_contract.yaml#proposition_governance")
+        self.assertEqual(writing["core_model_summary_policy"], "adaptive_required_inline_not_applicable")
+        self.assertEqual(writing["prose_audit_script"], "scripts/audit_paper_prose.py")
+        self.assertEqual(writing["prose_audit_default_mode"], "report_only")
+        self.assertEqual(writing["prose_audit_strict_blocks_on"], ["blocking", "review_required"])
+        self.assertIn("consumer_rule", writing)
 
 
 if __name__ == "__main__":

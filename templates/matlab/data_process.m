@@ -1,0 +1,157 @@
+%% data_process：项目级数据预处理证据绘图入口
+% 仅 preprocessing_decision=project_level 时实例化并放入“数据预处理/”。
+% 只读取“数据预处理结果.xlsx”中 Python 已输出的处理前/后与验证底层数据。
+% 禁止在 MATLAB 中重新清洗、插值、滤波、重采样、训练填补模型或重新选择参数。
+% 先执行 modules/04_figure_evidence.md 的 Scientific Figure Synthesis Gate；预处理图也不能因为“前后对比”就默认退化成普通柱状/折线。
+% 若同一证据空间能同时展示原始点、处理结果、误差/区间或阈值边界，优先 Composite Encoding。
+% 选定视觉结构后进入对应 Scientific Rendering Profile，再通过 Figure Layout Gate 与 Figure Enhancement Gate。
+% 视觉结构确定后再进入 Publication Rendering Grammar：palette profile / open-axis / adaptive canvas / legend strategy；样式不得改变预处理证据语义。
+% Enhancement 的实现模式参考 templates/figure/figure_enhancement_patterns.md，不得在本模板建立第二套绘图决策规则。
+% 正式论文图不设置整体 title/sgtitle；正式图题由 LaTeX/DOCX caption 承担，多面板按需只保留 a/b/c/d 等 panel label。
+
+clearvars;
+clc;
+
+%% 1. 路径
+scriptPath = string(mfilename("fullpath"));
+assert(strlength(scriptPath) > 0, "请从已保存的data_process.m运行脚本");
+processDir = string(fileparts(scriptPath));
+processBook = fullfile(processDir, "数据预处理结果.xlsx");
+assert(isfile(processBook), "缺少工作簿: %s", processBook);
+
+%% 2. 图证据合同——实例化时必须替换真实字段
+sourceSheet = "__ACTUAL_SOURCE_SHEET__";
+xHeader = "__ACTUAL_X_HEADER__";
+beforeHeader = "__ACTUAL_BEFORE_HEADER__";
+afterHeader = "__ACTUAL_AFTER_HEADER__";
+xLabelText = "__ACTUAL_X_LABEL_WITH_UNIT__";
+yLabelText = "__ACTUAL_Y_LABEL_WITH_UNIT__";
+expectedXColumn = NaN;
+expectedBeforeColumn = NaN;
+expectedAfterColumn = NaN;
+
+placeholders = [sourceSheet, xHeader, beforeHeader, afterHeader, xLabelText, yLabelText];
+assert(~any(startsWith(placeholders, "__ACTUAL_")), "data_process模板尚未实例化");
+
+availableSheets = string(sheetnames(processBook));
+assert(any(availableSheets == sourceSheet), "缺少工作表: %s", sourceSheet);
+raw = readcell(processBook, "Sheet", sourceSheet);
+assert(size(raw, 1) >= 2, "预处理绘图工作表没有真实数据");
+headers = strtrim(string(raw(1, :)));
+
+xColumn = exact_header_column(headers, xHeader);
+beforeColumn = exact_header_column(headers, beforeHeader);
+afterColumn = exact_header_column(headers, afterHeader);
+warn_position_drift(xHeader, expectedXColumn, xColumn);
+warn_position_drift(beforeHeader, expectedBeforeColumn, beforeColumn);
+warn_position_drift(afterHeader, expectedAfterColumn, afterColumn);
+
+x = cell_to_numeric(raw(2:end, xColumn));
+before = cell_to_numeric(raw(2:end, beforeColumn));
+after = cell_to_numeric(raw(2:end, afterColumn));
+valid = isfinite(x) & (isfinite(before) | isfinite(after));
+x = x(valid);
+before = before(valid);
+after = after(valid);
+assert(~isempty(x), "没有可绘制的预处理底层数据");
+[x, order] = sort(x);
+before = before(order);
+after = after(order);
+
+%% 3. 处理前后结构读取示例——正式实例化时按 Evidence Structure 升级
+% 若 x 具有时间/空间顺序，可使用前后曲线 + 原始点/关键事件/误差；若属于分布证据，
+% 应改成 box/violin + raw scatter / ECDF；若属于二维参数/空间证据，应改用 heatmap/field + contour/boundary。
+fig = figure("Color", "w", "Position", [100, 100, 960, 620]);
+ax = axes(fig);
+hold(ax, "on");
+palette = apply_publication_style(fig, "competition_high_contrast");
+plot(ax, x, before, "LineWidth", 1.9, "Color", palette.primary, ...
+    "DisplayName", "处理前");
+plot(ax, x, after, "LineWidth", 2.3, "Color", palette.comparison, ...
+    "DisplayName", "处理后");
+scatter(ax, x, after, 26, palette.comparison, "filled", ...
+    "MarkerFaceAlpha", 0.65, "HandleVisibility", "off");
+xlabel(ax, xLabelText);
+ylabel(ax, yLabelText);
+legend(ax, "Location", "best");
+grid(ax, "off");
+apply_publication_style(fig, "competition_high_contrast");
+
+%% 4. 可选：按 Figure Contract 继续实例化真正需要的科研证据
+% 推荐优先级：
+% - before/after + raw points + error/threshold；
+% - missing/recovery + true-vs-recovered + residual distribution；
+% - frequency/spectrum before vs after；
+% - resampling coverage / grid alignment；
+% - heatmap/field + contour/boundary；
+% - Local Zoom / overview+detail（仅关键差异被全局尺度压缩时）。
+% 每个面板必须直接对应一个预处理必要性/有效性判断。
+% 所有数值必须来自数据预处理结果.xlsx；不得从摘要数字反推序列。
+% 若两个或更多证据并不回答同一个 Primary question，应拆为多张 Figure。
+
+%% 5. 图窗保留供人工检查；默认不自动导出
+% 正式导出时文件基名使用 data_process 或 data_process_<evidence>。
+
+function column = exact_header_column(headers, expected)
+matches = find(headers == strtrim(string(expected)));
+assert(numel(matches) == 1, "字段缺失或重复: %s", expected);
+column = matches(1);
+end
+
+function warn_position_drift(header, expected, actual)
+if isfinite(expected) && expected >= 1 && actual ~= expected
+    warning("字段%s由第%d列移动到第%d列；已按精确表头读取", header, expected, actual);
+end
+end
+
+function values = cell_to_numeric(column)
+values = nan(size(column, 1), 1);
+for i = 1:size(column, 1)
+    item = column{i};
+    if (isnumeric(item) || islogical(item)) && isscalar(item)
+        values(i) = double(item);
+    elseif ischar(item) || isstring(item)
+        parsed = str2double(string(item));
+        if isfinite(parsed), values(i) = parsed; end
+    end
+end
+end
+
+function palette = apply_publication_style(fig, profile)
+% 优先使用仓库共享 style kernel；单文件独立运行时保留最小 fallback，不新增必需项目文件。
+if exist("hsk_apply_scientific_style", "file") == 2
+    palette = hsk_apply_scientific_style(fig, profile);
+    return;
+end
+palette = local_publication_palette(profile);
+fontName = local_select_font();
+set(fig, "Color", "w");
+for ax = reshape(findall(fig, "Type", "axes"), 1, [])
+    set(ax, "FontName", fontName, "FontSize", 16, "LineWidth", 1.15, ...
+        "Box", "off", "Layer", "top", "TickDir", "out");
+    grid(ax, "off");
+end
+for lgd = reshape(findall(fig, "Type", "legend"), 1, [])
+    set(lgd, "FontName", fontName, "FontSize", 14, "Box", "off");
+end
+end
+
+function palette = local_publication_palette(profile)
+assert(profile == "competition_high_contrast", ...
+    "独立单文件 fallback 只提供 competition_high_contrast；其他 profile 请让共享 hsk_apply_scientific_style.m 位于 MATLAB path");
+palette.primary = [20, 120, 255] / 255;
+palette.comparison = [240, 68, 68] / 255;
+palette.positive = [22, 179, 100] / 255;
+palette.accent = [247, 144, 9] / 255;
+palette.secondary = [122, 90, 248] / 255;
+palette.context = [154, 164, 178] / 255;
+end
+
+function fontName = local_select_font()
+preferred = ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "Arial Unicode MS", "Helvetica", "Arial"];
+available = string(listfonts);
+fontName = "Helvetica";
+for candidate = preferred
+    if any(strcmpi(available, candidate)), fontName = candidate; return; end
+end
+end

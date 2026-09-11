@@ -39,6 +39,8 @@ class TestTooling(unittest.TestCase):
             template = ROOT / profile["template_directory"] / profile["template_main"]
             self.assertTrue(template.is_file(), template)
         self.assertIn("biber", payload["profiles"]["cumcm"]["sequence"])
+        mcm = (ROOT / "templates/latex/mcm/main.tex").read_text(encoding="utf-8")
+        self.assertIn(r"\nocite{example_reference}", mcm)
 
     def test_competition_profiles_separate_stable_and_edition_rules(self):
         payload = yaml.safe_load((ROOT / "config/competition_profiles.yaml").read_text(encoding="utf-8"))
@@ -69,7 +71,14 @@ class TestTooling(unittest.TestCase):
         self.assertEqual(module.validate_framework_file(template), [])
         text = template.read_text(encoding="utf-8")
         state = {
-            "paper_framework": {"sync_status": "current"},
+            "paper_framework": {
+                "version": "v0.8-project-memory",
+                "sync_status": "current",
+                "terminology_registry": [{"id": "T1"}],
+                "numeric_profile": [{"id": "N1"}],
+                "title_claims": [{"id": "TC1"}],
+                "paper_fragments": [{"id": "paper.abstract.q1"}],
+            },
             "subproblems": {
                 "Q1": {
                     "status": "solved",
@@ -112,6 +121,7 @@ class TestTooling(unittest.TestCase):
         active = {path.as_posix() for path in module.iter_files()}
         self.assertIn("legacy/README.md", active)
         self.assertFalse(any(path.startswith("legacy/") and path != "legacy/README.md" for path in active))
+        self.assertFalse(module.is_active_path(Path(".tmp_unittest.log")))
 
     def test_render_paper_refuses_ambiguous_profile_and_uses_profile_main(self):
         module = load_module("render_paper", ROOT / "scripts/render_paper.py")
@@ -132,6 +142,8 @@ class TestTooling(unittest.TestCase):
         report = {"scores": {name: 80 for name in config["dimensions"]}, "hard_fail": []}
         result = module.score_submission(config, report)
         self.assertEqual(result["total"], 80.0)
+        self.assertNotIn("review_status", result)
+        self.assertIn("verified_official_rule_violation", config["hard_fail"])
         report["hard_fail"] = ["latex_compile_failure"]
         self.assertEqual(module.score_submission(config, report)["status"], "reject_or_major_rework")
 
@@ -150,7 +162,7 @@ class TestTooling(unittest.TestCase):
             self.assertTrue(patched.endswith(suffix))
             self.assertFalse(module.patch_cumcm_class(target))
 
-    def test_matlab_templates_use_real_headers_fixed_columns_and_titles(self):
+    def test_matlab_templates_use_real_headers_fixed_columns_and_caption_owned_titles(self):
         plotting = (ROOT / "templates/matlab/q1_plot.m").read_text(encoding="utf-8")
         style = (ROOT / "templates/matlab/hsk_apply_scientific_style.m").read_text(encoding="utf-8")
         reader = (ROOT / "templates/matlab/hsk_read_result_workbooks.m").read_text(encoding="utf-8")
@@ -166,12 +178,21 @@ class TestTooling(unittest.TestCase):
         self.assertIn("xColumn = NaN", plotting)
         self.assertIn("actualXHeader == xHeader", plotting)
         self.assertNotIn("readtable(", plotting)
-        self.assertIn('figureTitle = "__ACTUAL_FIGURE_TITLE__"', plotting)
-        self.assertIn("title(ax, figureTitle", plotting)
-        self.assertIn("FontWeight", plotting)
+        code = "\n".join(line.split("%", 1)[0] for line in plotting.splitlines())
+        self.assertNotIn("title(", code)
+        self.assertNotIn("sgtitle(", code)
+        self.assertIn("LaTeX/DOCX caption", plotting)
+        self.assertIn("Scientific Figure Synthesis Gate", plotting)
+        self.assertIn("palette.primary", plotting)
+        self.assertIn("palette.comparison", plotting)
+        self.assertIn('apply_publication_style(fig, "competition_high_contrast")', plotting)
+        self.assertIn('grid(ax, "off")', plotting)
         self.assertIn("listfonts", style)
         self.assertIn("Noto Sans CJK SC", style)
-        self.assertIn("ax.Title", style)
+        self.assertNotIn("ax.Title", style)
+        self.assertIn("高对比、中高饱和", style)
+        self.assertIn('case "journal_balanced"', style)
+        self.assertIn('case "monochrome_print"', style)
         self.assertIn("结果深化分析.xlsx", reader)
         self.assertIn("books.analysis", reader)
         self.assertIn("readcell", reader)
