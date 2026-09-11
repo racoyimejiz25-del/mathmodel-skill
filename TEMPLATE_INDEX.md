@@ -30,6 +30,7 @@
 - `templates/figure/mechanism_practical_check.md`
 - `templates/figure/mechanism_qa.md`
 - `templates/figure/per_question_mechanism_plan.md`
+- `templates/figure/rendering_backend_selection.md`
 - `templates/figure/result_figure_contract.md`
 - `templates/figure/result_figure_qa.md`
 - `templates/figure/visual_mapping_contract.md`
