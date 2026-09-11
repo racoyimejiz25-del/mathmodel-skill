@@ -365,5 +365,6 @@
 - `tests/test_v900_state_transitions.py`
 - `tests/test_v900_transactional_writers.py`
 - `tests/test_v910_publication_rendering.py`
+- `tests/test_v920_clarity_backend_selection.py`
 - `tests/test_v920_figure_visual_quality.py`
 - `tests/test_v920_line_style_engine.py`
