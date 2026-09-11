@@ -64,6 +64,8 @@ class FigureVisualQualityV920Tests(unittest.TestCase):
             self.assertIn(token, text)
         self.assertIn("不设置每问必须或最多多少张图的固定数量限制", text)
         self.assertIn("美感必须达到成熟竞赛论文水平", text)
+        self.assertIn("质量标尺，不是唯一选图/设计参考源", text)
+        self.assertIn("不意味着只参照或模仿高教社杯", text)
 
     def test_visual_mapping_is_dependency_free(self):
         text = (ROOT / "templates/figure/visual_mapping_contract.md").read_text(encoding="utf-8")
@@ -72,14 +74,26 @@ class FigureVisualQualityV920Tests(unittest.TestCase):
         self.assertIn("不要求安装任何外部作图库", text)
         self.assertIn("无真实语义", text)
 
-    def test_cumcm_quality_gate_uses_official_showcase_only_as_visual_reference(self):
+    def test_cumcm_quality_gate_is_level_benchmark_not_sole_reference(self):
         text = (ROOT / "templates/figure/cumcm_visual_quality_gate.md").read_text(encoding="utf-8")
         self.assertIn("mcm.edu.cn", text)
         self.assertIn("dxs.moe.gov.cn", text)
-        self.assertIn("视觉质量参考", text)
+        self.assertIn("高教社杯是质量标尺，不是唯一参考源", text)
+        self.assertIn("整体视觉完成度、清晰度、版面成熟度和论文融合度至少应达到相近档次", text)
+        self.assertIn("实际选图与视觉设计仍采用多源参考", text)
+        self.assertIn("只看高教社杯论文选图", text)
         self.assertIn("不得复制、描摹、换色复刻", text)
         self.assertIn("Final-size", text)
         self.assertIn("好看不能让一张低价值图进入正文", text)
+
+    def test_literature_reference_remains_multi_source_and_domain_first(self):
+        text = (ROOT / "templates/figure/literature_figure_reference.md").read_text(encoding="utf-8")
+        self.assertIn("质量水平锚点之一", text)
+        self.assertIn("不是唯一的选图资料源", text)
+        self.assertIn("同领域同行评审论文与综述", text)
+        self.assertIn("官方技术报告、标准、机构报告", text)
+        self.assertIn("不要把“与高教社杯优秀论文水平相近”误解为“只查高教社杯论文”", text)
+        self.assertIn("质量标尺和选图资料源是两件事", text)
 
     def test_palette_rules_are_semantic_not_decorative(self):
         text = (ROOT / "modules/04_figure_evidence.md").read_text(encoding="utf-8")
