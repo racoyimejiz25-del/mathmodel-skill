@@ -41,3 +41,5 @@ jobs:
           fi
           git commit -m "Sync Vexushi1/mathmodel-skill main"
           git push origin HEAD:main
+
+# trigger: 2026-09-11
