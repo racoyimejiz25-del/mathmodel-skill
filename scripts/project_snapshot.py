@@ -12,6 +12,7 @@ import artifact_fingerprint as ARTIFACT_FINGERPRINT
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 
+
 def _load_module(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -19,6 +20,7 @@ def _load_module(name: str, path: Path):
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
 
 WORKBOOK_VALIDATION = _load_module(
     "hsk_project_snapshot_workbook_validation",
@@ -32,9 +34,17 @@ framework_section_hash = ARTIFACT_FINGERPRINT.framework_section_hash
 QUESTION_RE = re.compile(r"问题([一二三四五六七八九十百]+)")
 
 MATLAB_TITLE_RE = re.compile(r"\b(?:title|sgtitle)\s*\(", re.IGNORECASE)
+PYTHON_TITLE_RE = re.compile(
+    r"(?:\bplt\s*\.\s*(?:title|suptitle)|\b(?:fig|figure)\s*\.\s*suptitle|\.\s*set_title)\s*\(",
+    re.IGNORECASE,
+)
 
-EXPORT_RE = re.compile(
+MATLAB_EXPORT_RE = re.compile(
     r"(?:exportgraphics|print)\s*\([^\n]*?[\"']([^\"']+\.(?:png|pdf|svg|tif|tiff|jpg|jpeg))[\"']",
+    re.IGNORECASE,
+)
+PYTHON_EXPORT_RE = re.compile(
+    r"(?:savefig)\s*\([^\n]*?[\"']([^\"']+\.(?:png|pdf|svg|tif|tiff|jpg|jpeg))[\"']",
     re.IGNORECASE,
 )
 
@@ -56,6 +66,7 @@ def question_key(chinese_name: str) -> str:
     suffix = chinese_name.removeprefix("问题")
     return f"Q{order.index(suffix) + 1}" if suffix in order else chinese_name
 
+
 def chinese_question_name(key: str) -> str:
     order = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
     match = re.fullmatch(r"Q(\d+)", key)
@@ -63,13 +74,16 @@ def chinese_question_name(key: str) -> str:
         return f"问题{order[int(match.group(1)) - 1]}"
     return key
 
+
 def question_number(chinese_name: str) -> int | None:
     match = re.fullmatch(r"Q(\d+)", question_key(chinese_name))
     return int(match.group(1)) if match else None
 
+
 def preprocessing_decision(state: Mapping[str, Any]) -> str | None:
     value = str(((state.get("preprocessing") or {}).get("decision", ""))).strip()
     return value if value in VALID_PREPROCESSING_DECISIONS else None
+
 
 def data_source_files(
     root: Path, state: Mapping[str, Any]
@@ -104,6 +118,7 @@ def data_source_files(
     warnings.append("项目状态未声明data.sources；data hash使用受限根目录数据文件回退扫描")
     return files, "fallback_scan", issues, warnings
 
+
 def active_data_hash(
     root: Path,
     state: Mapping[str, Any],
@@ -128,6 +143,7 @@ def active_data_hash(
     warnings.append("preprocessing_decision=project_level但统一预处理工作簿尚未accepted；当前data hash仍使用原始数据，仅可用于预处理阶段")
     return raw_hash, "raw_project_level_pending", warnings
 
+
 def _classification(entry: Mapping[str, Any]):
     classification = entry.get("classification") or {}
     objective = classification.get("objective")
@@ -138,11 +154,13 @@ def _classification(entry: Mapping[str, Any]):
     capabilities = entry.get("capabilities")
     return objective, structures, problem_types, capabilities if isinstance(capabilities, Mapping) else None
 
+
 def _question_dir(root: Path, chinese_name: str) -> Path:
     current = root / f"{chinese_name}求解"
     if current.is_dir():
         return current
     return root / "结果数据表" / chinese_name
+
 
 def _question_names(root: Path, state: Mapping[str, Any]) -> list[str]:
     names = {chinese_question_name(str(key)) for key in (state.get("subproblems") or {})}
@@ -159,6 +177,7 @@ def _question_names(root: Path, state: Mapping[str, Any]) -> list[str]:
         )
     return sorted(names, key=lambda value: question_number(value) or 999)
 
+
 def _stage_code_paths(root: Path, chinese_name: str) -> tuple[Path | None, Path | None, bool]:
     current_dir = root / f"{chinese_name}求解"
     primary = current_dir / f"{chinese_name}求解.py"
@@ -174,9 +193,11 @@ def _stage_code_paths(root: Path, chinese_name: str) -> tuple[Path | None, Path 
         legacy_primary.is_file() and not legacy_analysis.is_file(),
     )
 
+
 def _python_files(root: Path, chinese_name: str) -> list[Path]:
     primary, analysis, _ = _stage_code_paths(root, chinese_name)
     return [path for path in (primary, analysis) if path is not None]
+
 
 def _analysis_path(result_dir: Path, chinese_name: str) -> tuple[Path, bool]:
     current = result_dir / f"{chinese_name}结果深化分析.xlsx"
@@ -185,6 +206,7 @@ def _analysis_path(result_dir: Path, chinese_name: str) -> tuple[Path, bool]:
     legacy = result_dir / f"{chinese_name}敏感性与鲁棒性结果.xlsx"
     return (legacy, True) if legacy.is_file() else (current, False)
 
+
 def _figure_files(result_dir: Path) -> list[Path]:
     directories = [result_dir, result_dir / "图表"]
     return sorted(
@@ -192,6 +214,7 @@ def _figure_files(result_dir: Path) -> list[Path]:
          if path.is_file() and path.suffix.lower() in FIGURE_SUFFIXES},
         key=lambda item: item.as_posix(),
     )
+
 
 def _validate_workbook(path: Path, kind: str, schema: Mapping[str, Any], entry: Mapping[str, Any]) -> list[str]:
     objective, structures, problem_types, capabilities = _classification(entry)
@@ -205,6 +228,7 @@ def _validate_workbook(path: Path, kind: str, schema: Mapping[str, Any], entry: 
         return [f"{path.name}: {exc}"]
     return []
 
+
 def _has_sheets(path: Path, names: set[str]) -> bool:
     if not path.is_file():
         return False
@@ -212,6 +236,7 @@ def _has_sheets(path: Path, names: set[str]) -> bool:
         return names.issubset(WORKBOOK_VALIDATION.read_workbook_tables(path))
     except Exception:  # noqa: BLE001
         return False
+
 
 def _matlab_executable_text(text: str) -> str:
     """Remove MATLAB comments while preserving percent signs inside quoted strings."""
@@ -245,6 +270,7 @@ def _matlab_executable_text(text: str) -> str:
         cleaned.append(line)
     return "\n".join(cleaned)
 
+
 def _parse_matlab(script: Path) -> tuple[bool, list[str], list[str]]:
     if not script.is_file():
         return False, [], []
@@ -253,8 +279,54 @@ def _parse_matlab(script: Path) -> tuple[bool, list[str], list[str]]:
     return (
         bool(MATLAB_TITLE_RE.search(code_text)),
         WORKBOOK_REF_RE.findall(code_text),
-        EXPORT_RE.findall(code_text),
+        MATLAB_EXPORT_RE.findall(code_text),
     )
+
+
+def _parse_python_figure(script: Path) -> tuple[bool, list[str], list[str]]:
+    if not script.is_file():
+        return False, [], []
+    text = script.read_text(encoding="utf-8", errors="ignore")
+    return (
+        bool(PYTHON_TITLE_RE.search(text)),
+        WORKBOOK_REF_RE.findall(text),
+        PYTHON_EXPORT_RE.findall(text),
+    )
+
+
+def _figure_script_candidates(result_dir: Path, number: int | None) -> list[Path]:
+    stem = f"q{number}_plot" if number else "q_plot"
+    return [result_dir / f"{stem}.py", result_dir / f"{stem}.m"]
+
+
+def _select_figure_script(
+    result_dir: Path,
+    number: int | None,
+    entry: Mapping[str, Any],
+) -> tuple[Path | None, list[Path]]:
+    candidates = [path for path in _figure_script_candidates(result_dir, number) if path.is_file()]
+    if not candidates:
+        return None, []
+    declared = str(entry.get("matlab_script") or "").strip()
+    if declared:
+        declared_name = Path(declared).name
+        for candidate in candidates:
+            if candidate.name == declared_name:
+                return candidate, candidates
+    return candidates[0], candidates
+
+
+def _parse_figure_script(script: Path | None) -> tuple[str | None, bool, list[str], list[str]]:
+    if script is None:
+        return None, False, [], []
+    if script.suffix.lower() == ".py":
+        has_title, workbooks, exports = _parse_python_figure(script)
+        return "Python", has_title, workbooks, exports
+    if script.suffix.lower() == ".m":
+        has_title, workbooks, exports = _parse_matlab(script)
+        return "MATLAB", has_title, workbooks, exports
+    return None, False, [], []
+
 
 def _snapshot_question(
     root: Path,
@@ -270,7 +342,7 @@ def _snapshot_question(
     analysis_workbook, legacy_analysis_workbook = _analysis_path(result_dir, chinese_name)
     primary_code, analysis_code, legacy_single_code = _stage_code_paths(root, chinese_name)
     number = question_number(chinese_name)
-    matlab = result_dir / f"q{number}_plot.m" if number else result_dir / "q_plot.m"
+    figure_script, figure_candidates = _select_figure_script(result_dir, number, entry)
     figures = _figure_files(result_dir)
     status = str(entry.get("status", "pending"))
     require_solution = status in SOLVED_STATUSES
@@ -308,25 +380,31 @@ def _snapshot_question(
     if require_analysis and not analysis_report_exists:
         issues.append("结果深化分析工作簿缺少分析设计或结论稳定性汇总")
 
-    matlab_has_title, workbook_refs, exports = _parse_matlab(matlab)
-    if delivery_scope == "figures":
-        if not matlab.is_file():
-            issues.append("图表交付缺少MATLAB脚本")
+    figure_backend, figure_has_title, workbook_refs, exports = _parse_figure_script(figure_script)
+    if len(figure_candidates) > 1:
+        message = "检测到qX_plot.py与qX_plot.m同时存在；正式Figure pipeline默认只保留一个生产后端"
+        if delivery_scope == "figures":
+            issues.append(message)
         else:
-            if matlab_has_title:
-                issues.append("MATLAB正式论文图不得设置整体title或sgtitle；正式图名由LaTeX/DOCX caption承担")
+            warnings.append(message)
+    if delivery_scope == "figures":
+        if figure_script is None:
+            issues.append("图表交付缺少正式Figure脚本；应按Backend Selection选择qX_plot.py或qX_plot.m")
+        else:
+            if figure_has_title:
+                issues.append("正式论文图不得设置整体title/sgtitle/suptitle；正式图名由LaTeX/DOCX caption承担")
             standard = {
                 f"{chinese_name}求解结果.xlsx",
                 f"{chinese_name}结果深化分析.xlsx",
                 f"{chinese_name}敏感性与鲁棒性结果.xlsx",
             }
             if not {Path(item).name for item in workbook_refs}.intersection(standard):
-                issues.append("MATLAB脚本未发现标准工作簿引用")
+                issues.append("Figure脚本未发现标准工作簿引用")
             for item in exports:
-                export_path = (matlab.parent / item).resolve()
+                export_path = (figure_script.parent / item).resolve()
                 if not export_path.is_file():
                     shown = export_path.relative_to(root).as_posix() if export_path.is_relative_to(root) else export_path.as_posix()
-                    issues.append(f"MATLAB声明导出的图不存在: {shown}")
+                    issues.append(f"Figure脚本声明导出的图不存在: {shown}")
 
     framework = root / "模型论文框架.md"
     hashes = {
@@ -335,11 +413,14 @@ def _snapshot_question(
         "analysis_code": sha256_file(analysis_code) if analysis_code else None,
         "solution_workbook": sha256_file(solution) if solution.is_file() else None,
         "result_analysis_workbook": sha256_file(analysis_workbook) if analysis_workbook.is_file() else None,
-        "matlab_script": sha256_file(matlab) if matlab.is_file() else None,
+        # Compatibility key name retained until the next project-state schema migration.
+        # Its value is the selected Figure production script hash, regardless of .py/.m backend.
+        "matlab_script": sha256_file(figure_script) if figure_script else None,
         "figure_bundle": combined_hash(figures, root),
         "framework": framework_section_hash(framework, str(entry.get("framework_section", ""))),
     }
     hashes = {name: value for name, value in hashes.items() if value}
+    figure_relative = figure_script.relative_to(root).as_posix() if figure_script else None
     return {
         "key": key,
         "chinese_name": chinese_name,
@@ -354,8 +435,12 @@ def _snapshot_question(
         "legacy_analysis_workbook": legacy_analysis_workbook,
         "result_quality_report": quality_exists,
         "result_analysis_report": analysis_report_exists,
-        "matlab_script": matlab.relative_to(root).as_posix() if matlab.is_file() else None,
-        "matlab_has_title": matlab_has_title,
+        "figure_script": figure_relative,
+        "figure_backend": figure_backend,
+        # Compatibility alias: project_state still names this carrier `matlab_script`.
+        "matlab_script": figure_relative,
+        "matlab_has_title": figure_has_title,
+        "figure_has_title": figure_has_title,
         "workbook_references": workbook_refs,
         "declared_exports": exports,
         "figures": [path.relative_to(root).as_posix() for path in figures],

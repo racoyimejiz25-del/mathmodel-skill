@@ -1,6 +1,20 @@
 # Changelog
 
-## Current release: 9.1.0
+## Current release: 9.2.0
+
+- Upgraded the sole Module 04 Figure Authority to a complete evidence-first workflow: Core conclusion → Evidence level → Evidence structure → literature visual reference when useful → Visual Mapping → candidate visual structure → Basic-form Challenge → merge/split → rendering/enhancement → semantic palette → Main-text Admission → final-size/export QA → portfolio closure.
+- Adopted the dependency-free “方案 4” policy: ideas may be absorbed from Grammar of Graphics/gramm, RainCloud-style evidence layering, SciencePlots-style publication profiles, UltraPlot/ProPlot-style layout, scientific colormaps and export QA, but no external plotting package becomes a required runtime dependency.
+- Added `templates/figure/visual_mapping_contract.md` so `X / Y / Color / Size / Shape / Facet / Annotation / Uncertainty` must carry real evidence semantics before chart type is chosen.
+- Added literature-guided visual selection without turning papers into numerical fact sources: no copying, tracing, recoloring, screenshot reverse-engineering, fixed reference count or plot-frequency voting.
+- Added a CUMCM / 高教社杯 Competition Visual Quality Gate grounded in the official historical-paper showcase entry; recent officially showcased papers provide a minimum visual-maturity reference for layout cleanliness, palette restraint, hierarchy, final-size readability and figure–caption integration, not a figure template to imitate.
+- Strengthened semi-constrained scientific color governance: sequential / centered-diverging / restrained-qualitative / cyclic semantics, stable cross-figure object meanings, restrained saturation, neutral context deweighting, no rainbow/jet, and no red–green-only critical encoding.
+- Made Main-text Admission explicit with `MAIN_TEXT / APPENDIX / TABLE_ONLY / MERGE / DROP` and the deletion test: if removing a Figure does not make an important claim materially harder to believe, understand, compare or verify, it does not automatically enter the main text.
+- Preserved every prior Figure quality requirement: Evidence Structure, Evidence levels, Basic-form Challenge, Composite Encoding Preference, Figure Layout Gate, Enhancement Gate, Missing Scientific Evidence Check, redundancy/unique-contribution review, workbook truth boundaries and Figure Portfolio Scientific Quality Gate.
+- Added Final-size Readability / Export QA so Figures are judged at their intended Word/LaTeX insertion size, with vector-first formal export when available and reproducible native MATLAB/Python export rather than a new package dependency.
+- Preserved the no-quota rule: there is no fixed minimum or maximum Figure count per question; only redundant, low-value, decorative or scientifically non-contributive Figures are rejected.
+- Preserved model mathematics, Model Approval, preprocessing, 03A/03B solve/analysis boundaries, accepted-workbook numerical truth, Project State, Workbook Schema and per-question delivery layout.
+
+## Previous release: 9.1.0
 
 - Added a Module-04-owned Publication Rendering Grammar for palette profile selection, open-axis publication frames, adaptive canvas/panel geometry, legend strategy, axis/baseline honesty and explicit export policy without creating a second Figure Authority.
 - Extended `hsk_apply_scientific_style.m` with `competition_high_contrast`, `journal_balanced` and `monochrome_print` profiles, semantic palette fields, typography hierarchy and backward-compatible legacy palette aliases.
@@ -195,7 +209,7 @@
 ## Previous release: 8.0.1
 
 - Completed a three-way chapter-capability audit against the v7.19 writing authority, the user-approved v7.20 R1 plan and the v8.0.0 compact runtime; added `docs/v801_chapter_capability_preservation_audit.md` as a non-authoritative migration/evidence matrix.
-- Restored ordinary-route detail for title/keywords, data/preprocessing, shared foundations, optimization variables/domains/units, objective meaning, constraint sources, non-optimization summaries, proposition boundaries, solver encoding/parameters/termination/output mapping, numerical style, terminology, citations, role-specific figure interpretation and evaluation boundaries.
+- Restored ordinary-route detail for title/keywords, data/preprocessing, shared foundations, optimization variables/domains/units, objective meaning, constraint sources, adaptive core-model summary, proposition boundaries, solver encoding/parameters/termination/output mapping, numerical style, terminology, citations, role-specific figure interpretation and evaluation boundaries.
 - Preserved the full `model_establishment_solution_narrative` reasoning Authority unchanged while keeping `latex.md` a carrier-only Adapter; complex Terminology/Numeric/Citation disputes now explicitly trigger the full-authority fallback.
 - Added a maintained Q3 later-question inheritance/extension template so Q1, Q2 and Q3 all carry the adaptive MODEL → SOLVE → RESULT → VALIDATE writing contract without forcing simple questions into four literal headings.
 - Extended the conservative surface audit with explicit-stage order reversal, solver-first narrative and consecutive-figure adjacency findings, including negative tests for professional headings and structure-led solver introductions.
@@ -254,7 +268,7 @@
 - Added **Event Topology / Boundary** requirements for multi-interval events, valid local brackets, endpoint update rules, tolerances and fallback logic; global bisection is rejected when event state can follow `0→1→0` or otherwise switch non-monotonically.
 - Added **Reduction Provenance** with `exact / proven_sufficient / heuristic`. Heuristic reductions must retain discarded-domain audit evidence and calibrated claim scope instead of being presented as full-domain proof.
 - Added **Solver Applicability / Objective Landscape** reasoning and approval-bound conditional probes. Solver families must be justified from actual mathematical/landscape structure; cross-problem fixed numeric switch thresholds and post-hoc criteria are forbidden.
-- Added explicit **Multi-resource Composition** semantics, including `forall-exists` versus `exists-forall`, to prevent invalid simple summation, overlap handling and hidden-coupling removal.
+- Added **Multi-resource Composition** semantics, including `forall-exists` versus `exists-forall`, to prevent invalid simple summation, overlap handling and hidden-coupling removal.
 - Added **Surrogate / Decomposition → Original Model Reevaluation** so final candidates return to the original objective and all original hard constraints before headline results are accepted.
 - Clarified the mechanism/optimization 03A/03B boundary: current locked-model intrinsic validity remains in 03A, while parameter sensitivity, stress scenarios, alternative models/algorithms, multi-seed or multi-initial-value claim stability and broader failure-boundary exploration remain post-acceptance 03B.
 - Extended the existing `v0.8-project-memory` framework with optional structural-validity facts and evidence anchors only; no framework schema migration, new project report, workbook migration or CLI migration was introduced.
@@ -363,7 +377,7 @@
 - Added missing repository/script navigation for `render_paper.py`, `latex_delivery.py`, `hsk_pack_submission.py` and `validate_submission_package.py`.
 - Standardized reproducibility metadata guidance on project-level `internal_metadata/` and removed the active `metadata/` path residue.
 - Derived the lint backend release version directly from `core/bootstrap.yaml` so direct backend execution cannot silently retain an older hard-coded release.
-- Added v7.10.1 read-path regression coverage; numerical models, preprocessing, user execution, workbook interfaces, LaTeX attestation v3 and submission validation behavior remain unchanged.
+- Added v7.10.1 read-path regression coverage; numerical models, preprocessing semantics, user execution, workbook interfaces, LaTeX attestation v3 and submission validation behavior remain unchanged.
 
 ## Previous release: 7.10.0
 
@@ -418,7 +432,7 @@
 - Added `support / modify / reject` result-analysis evidence disposition. Every sensitivity, robustness, out-of-sample, stress or multi-method result can be tied to a target claim and required action; rejecting a core answer triggers redo/redesign, while rejecting an auxiliary evaluation claim may be handled by explicit removal/rewrite.
 - Added local paper-fragment stale propagation for v0.8 projects. A Q3 semantic/result change only invalidates paper fragments that actually depend on Q3 (for example Q3 prose, figures, abstract claim, evaluation sentence or Title Claim); unrelated background/Q1/Q2 remain current. v0.7 and earlier whole-framework stale semantics remain read-compatible.
 - Added `Paragraph Necessity Test`: if deleting a paragraph loses no problem requirement, mechanism, mathematical relation, solver basis, result evidence or necessary boundary, it should be removed, merged or moved to an appendix. Machine heuristics may warn but cannot automatically delete prose.
-- Numerical modeling, conditional preprocessing, workbook Schema, Python/MATLAB ownership, full-fidelity user execution and the per-question five-file interface remain unchanged.
+- Numerical modeling, conditional preprocessing semantics, workbook Schema, Python/MATLAB ownership, full-fidelity user execution and the per-question five-file interface remain unchanged.
 
 ## Previous release: 7.6.0
 

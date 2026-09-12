@@ -1,4 +1,4 @@
-version: 9.1.0
+version: 9.2.0
 schema: core/workbook_schema.yaml
 preprocessing_contract: core/global_preprocessing_contract.yaml
 model_approval_contract: core/model_approval_contract.yaml
@@ -31,7 +31,7 @@ scope_boundary:
   rule: Delegated sections below are integration pointers/switches only; they must not become parallel policy authorities.
 project_root:
   problem_and_attachments: 赛题、附件数据表和说明文件直接放在项目根目录
-  preprocessing_outputs: 仅preprocessing_decision=project_level时创建数据预处理/；最终包含数据预处理.py、数据预处理结果.xlsx和data_process.m
+  preprocessing_outputs: 仅preprocessing_decision=project_level时创建数据预处理/；最终包含数据预处理.py、数据预处理结果.xlsx，以及由Figure Backend Selection在data_process_plot.py/data_process.m中选定的一个正式绘图脚本
   model_paper_framework: 模型论文框架.md
   project_state: state/project_state.yaml
   sync_report: sync_report.yaml
@@ -195,7 +195,7 @@ model_paper_framework:
     latex_rendering: modules/05_writing/latex.md
     preprocessing_decision_and_active_data_source: state/project_state.yaml + core/global_preprocessing_contract.yaml
     preprocessing_workbook_when_project_level: 数据预处理结果.xlsx
-    preprocessing_figure_script_when_project_level: 数据预处理/data_process.m
+    preprocessing_figure_script_when_project_level: 数据预处理/data_process_plot.py 或 数据预处理/data_process.m，由Figure Backend Selection二选一
     primary_numerical_validity: core/numerical_verification_contract.yaml + 主求解工作簿底层证据
     result_analysis_semantics: modules/03_result_analysis.md + 结果深化分析工作簿
     semantic_revision_dependency_hash_and_freshness: state/project_state.yaml
@@ -265,7 +265,7 @@ project_sync:
     - result_quality_report
     - result_analysis_workbook
     - result_analysis_report
-    - matlab_scripts
+    - figure_scripts
     docx:
     - project_state
     - model_paper_framework
@@ -297,13 +297,13 @@ project_sync:
       condition: preprocessing_decision == project_level
       code: [preprocessing_code, preprocessing_workbook]
       results: [preprocessing_workbook]
-      figures: [preprocessing_workbook, preprocessing_matlab_script]
-      docx: [preprocessing_workbook, preprocessing_matlab_script]
-      latex: [preprocessing_workbook, preprocessing_matlab_script]
-      submission: [preprocessing_workbook, preprocessing_matlab_script]
+      figures: [preprocessing_workbook, preprocessing_figure_script]
+      docx: [preprocessing_workbook, preprocessing_figure_script]
+      latex: [preprocessing_workbook, preprocessing_figure_script]
+      submission: [preprocessing_workbook, preprocessing_figure_script]
     preprocessing_decision_not_needed_or_question_local:
       condition: preprocessing_decision in [not_needed, question_local]
-      forbidden_required_artifacts: [preprocessing_code, preprocessing_workbook, preprocessing_matlab_script]
+      forbidden_required_artifacts: [preprocessing_code, preprocessing_workbook, preprocessing_figure_script]
   artifact_hash_layers:
   - raw_data
   - preprocessing_decision
@@ -317,6 +317,7 @@ project_sync:
   - matlab_script
   - figure_bundle
   - framework
+  artifact_hash_compatibility_note: preprocessing_matlab_script与matlab_script是v9.2项目状态兼容载体名；它们保存当前被选中的Figure生产脚本哈希，允许对应脚本为.py或.m，不代表强制MATLAB。
   stale_propagation:
     raw_data:
     - preprocessing_workbook
@@ -393,7 +394,7 @@ project_sync:
   write_order:
   - 读取preprocessing_decision并按当前数据事实源发现项目级可选预处理产物与每问产物
   - 执行工作簿与图表链检查
-  - 计算当前分层哈希并比较已验证哈希、条件式预处理哈希、data_process哈希和两阶段小问代码哈希
+  - 计算当前分层哈希并比较已验证哈希、条件式预处理哈希、选定Figure脚本哈希和两阶段小问代码哈希
   - 按小问depends_on传播数值stale；v0.8再按Paper Fragment Dependency Map传播论文局部stale
   - 更新框架同步头；v0.8框架current只表示状态已同步，局部stale保留在paper_fragments
   - 重新计算最终框架哈希
@@ -403,15 +404,15 @@ project_sync:
   responsibilities:
   - 正式交付前先由semantic_governance检查当前模型语义、preprocessing_decision和跨问失效传播
   - 进入产物同步前强制执行项目状态Schema/语义校验与模型论文框架校验
-  - decision=project_level时发现数据预处理目录中的统一预处理Python、工作簿和图表阶段data_process.m；其他状态不得因缺少该目录报错
-  - 发现每问问题X求解目录中的主求解Python、结果深化分析Python、两类工作簿和qX_plot.m
+  - decision=project_level时发现数据预处理目录中的统一预处理Python、工作簿，以及由Backend Selection选定的data_process_plot.py或data_process.m；其他状态不得因缺少该目录报错
+  - 发现每问问题X求解目录中的主求解Python、结果深化分析Python、两类工作簿和由Backend Selection选定的qX_plot.py或qX_plot.m
   - 只有decision=project_level时检查依赖下游脚本不得再次直接读取对应共享原始数据源
   - 复用工作簿Schema检查工作表、字段、capability条件、主键、非有限数值和约束判定
   - 普通阶段同步按小问status检查最低产物；只有显式delivery scope执行正式交付全量门槛
   - 正式交付按decision条件核对预处理质量，再核对主结果质量、适用v7.14主数值证据已在用户返回验收时通过、分析状态为passed以及下游数值产物和v0.8 paper fragments非stale
-  - project_level进入figures及后续scope时必须核对data_process.m存在、引用数据预处理结果.xlsx且不重新执行预处理；question_local需要局部处理图时由qX_plot.m承接
-  - 核对MATLAB只读取其实际需要的数据事实源和标准工作簿，不要求所有qX_plot.m强制引用统一预处理工作簿
-  - project_level时统一预处理脚本/工作簿哈希绑定依赖数据链，data_process.m只影响预处理图表/论文层；not_needed/question_local时以原始数据哈希作为数据事实源
+  - project_level进入figures及后续scope时必须核对选定预处理Figure脚本存在、引用数据预处理结果.xlsx且不重新执行预处理；question_local需要局部处理图时由本问选定qX_plot.py/qX_plot.m承接
+  - 核对选定Figure脚本只读取其实际需要的数据事实源和标准工作簿；不得因Python或MATLAB后端切换重新求解、重新统计或重新预处理
+  - project_level时统一预处理脚本/工作簿哈希绑定依赖数据链，选定预处理Figure脚本只影响预处理图表/论文层；not_needed/question_local时以原始数据哈希作为数据事实源
   - 主求解脚本哈希与本问主结果链绑定；深化分析脚本哈希只影响本问深化工作簿及其下游
   - 当已验证哈希变化时按实际依赖证据链传播stale
   - v0.8只把stale传播到依赖该小问/上游paper fragment的论文片段；不得因为单问变化使整篇无关章节stale
@@ -431,11 +432,12 @@ project_sync:
     preprocessing_decision: 项目级预处理判定本身属于数据/模型语义层
     preprocessing_code: 仅project_level时绑定依赖共享数据下游
     preprocessing_workbook: 仅project_level时作为依赖小问数据哈希事实源，同时保存论文/图证据底层数据
-    preprocessing_matlab_script: data_process.m只影响预处理图表与论文证据层，不改变已验收数值数据事实源
+    preprocessing_matlab_script: v9.2兼容载体名；实际记录被选中的data_process_plot.py或data_process.m，只影响预处理图表与论文证据层，不改变已验收数值数据事实源
     subproblem_framework: subproblem.artifact_hashes.framework记录framework_section对应章节哈希
     primary_code: subproblem.primary_code_sha256记录已交付主求解脚本哈希
     analysis_code: subproblem.analysis_code_sha256记录已交付结果深化分析脚本哈希
     model_layer: subproblem.artifact_hashes.model只使用主求解脚本，不把结果深化分析脚本并入主模型哈希
+    matlab_script: v9.2兼容载体名；实际记录本问选定的qX_plot.py或qX_plot.m，不代表MATLAB固定后端
   data_hash_policy:
     project_level: 已验收数据预处理结果.xlsx哈希；预处理阶段另记录state/project_state.yaml中的raw data sources
     not_needed: state/project_state.yaml中的原始data.sources哈希
@@ -443,8 +445,8 @@ project_sync:
     fallback: 仅扫描根目录数据型文件，不包含PDF、DOCX、ZIP和正式交付目录
   figure_provenance:
     default: 不生成独立figure_evidence文件
-    project_level_preprocessing: 数据预处理结果.xlsx -> data_process.m -> 预处理证据图 -> LaTeX正文结论
-    per_question: 问题X标准工作簿 -> qX_plot.m -> 结果图 -> LaTeX正文结论
+    project_level_preprocessing: 数据预处理结果.xlsx -> selected(data_process_plot.py|data_process.m) -> 预处理证据图 -> LaTeX正文结论
+    per_question: 问题X标准工作簿 -> selected(qX_plot.py|qX_plot.m) -> 结果图 -> LaTeX正文结论
     legacy_read_compatibility: 结果数据表/问题X/figure_evidence.yaml
     mtime_role: 仅作辅助警告
 classification_contract:
@@ -499,16 +501,18 @@ global_preprocessing:
   directory: 数据预处理/
   python_script: 数据预处理.py
   workbook: 数据预处理结果.xlsx
-  matlab_script: data_process.m
-  exact_default_files:
+  figure_script_candidates: [data_process_plot.py, data_process.m]
+  selected_figure_script_policy: Backend Selection后恰好选择一个正式生产脚本；不同时要求两者
+  exact_default_file_count: 3
+  exact_default_file_roles:
   - 数据预处理.py
   - 数据预处理结果.xlsx
-  - data_process.m
+  - selected(data_process_plot.py|data_process.m)
   no_auxiliary_files_by_default: true
   raw_data_reader_exclusive_when_project_level: true
   downstream_raw_read_forbidden_when_project_level: true
   workbook_is_single_project_data_entry_when_project_level: true
-  matlab_reprocessing_forbidden: true
+  figure_script_reprocessing_forbidden: true
   absent_when: preprocessing_decision in [not_needed, question_local]
 per_question:
   question_directory: 问题{中文序号}求解/
@@ -518,13 +522,15 @@ per_question:
   mandatory_workbooks:
     solution: 问题{中文序号}求解结果.xlsx
     result_analysis: 问题{中文序号}结果深化分析.xlsx
-  matlab_script: q{阿拉伯序号}_plot.m
-  exact_default_files:
+  figure_script_candidates: [q{阿拉伯序号}_plot.py, q{阿拉伯序号}_plot.m]
+  selected_figure_script_policy: Backend Selection后恰好选择一个正式生产脚本；不同时要求两者
+  exact_default_file_count: 5
+  exact_default_file_roles:
   - 问题{中文序号}求解.py
   - 问题{中文序号}求解结果.xlsx
   - 问题{中文序号}结果深化分析.py
   - 问题{中文序号}结果深化分析.xlsx
-  - q{阿拉伯序号}_plot.m
+  - selected(q{阿拉伯序号}_plot.py|q{阿拉伯序号}_plot.m)
   two_python_stage_policy:
     primary: 主求解阶段交付问题X求解.py；数据入口由preprocessing_decision决定，只做主求解、PQS要求的内在数值有效性检查和不改变当前计算世界的Primary Evidence Capture，主工作簿accepted后冻结该脚本。
     result_analysis: 主工作簿accepted后单独生成问题X结果深化分析.py；该脚本继承同一preprocessing_decision与数据事实源并形成敏感性/稳健性/边界/替代方法等深化分析工作簿。
@@ -536,9 +542,15 @@ per_question:
     single_evolving_python: v6.6.x仅问题X求解.py的四文件项目可只读兼容
     sensitivity_robustness_filename: 问题{中文序号}敏感性与鲁棒性结果.xlsx
     v7_13_primary_without_verification_id: read_only
+    matlab_script_state_field: v9.2兼容字段；可保存qX_plot.py或qX_plot.m路径
     mode: read_only
 matlab_figure_contract:
+  compatibility_key_name: true
   authority: modules/04_figure_evidence.md
+  backend_policy: adaptive_python_or_matlab_no_forced_default
+  backend_selection_reference: templates/figure/rendering_backend_selection.md
+  clarity_visibility_reference: templates/figure/clarity_visibility_review.md
+  line_style_reference: templates/figure/line_style_engine.md
   title_required: false
   embedded_overall_title_forbidden: true
   formal_title_owner: DOCX_or_LaTeX_caption
@@ -546,10 +558,20 @@ matlab_figure_contract:
   multi_panel_title: panel_labels_only
   panel_labels_allowed: true
   scientific_synthesis_required_for_core_figures: true
+  literature_guided_reference_supported: true
+  visual_mapping_required_for_core_figures: true
   basic_form_challenge_required_for_core_figures: true
   composite_encoding_preferred_when_shared_evidence_space: true
+  rendering_backend_selection_required: true
+  clarity_visibility_review_required: true
+  aesthetic_review_required: true
+  main_text_admission_required: true
+  competition_visual_quality_gate_for_cumcm: true
+  final_size_readability_required_for_main_text: true
+  external_plotting_dependency_required: false
   portfolio_scientific_quality_review_required: true
   high_contrast_primary_palette_required: true
+  semantic_palette_hierarchy_required: true
   auxiliary_visual_deweighting_required: true
   field_resolution: exact_header_unique_match
   expected_column_position: optional_drift_check
@@ -559,17 +581,19 @@ matlab_figure_contract:
   declared_export_must_exist: false
   formal_figure_must_not_predate_sources: false
   keep_title_in_export_by_default: false
-  caption_role: DOCX/LaTeX图注承担正式图号、图名及必要统计口径；MATLAB正式图内不重复整体title/sgtitle，panel label、坐标轴、单位、图例和必要直接标注按证据需要保留
+  caption_role: DOCX/LaTeX图注承担正式图号、图名及必要统计口径；Python/MATLAB正式图内不重复整体title/sgtitle/suptitle，panel label、坐标轴、单位、图例和必要直接标注按证据需要保留
   title_registry: 模型论文框架.md与Figure Contract中的DOCX/LaTeX caption字段
   workbook_reference_required: true
-  preprocessing_script: 数据预处理/data_process.m
+  preprocessing_script_candidates: [数据预处理/data_process_plot.py, 数据预处理/data_process.m]
   preprocessing_export_stem: data_process
   preprocessing_source_workbook: 数据预处理/数据预处理结果.xlsx
-  preprocessing_matlab_must_not_reprocess: true
-  handoff_alternative: matlab_figure_handoff.json/yaml
+  preprocessing_figure_script_must_not_reprocess: true
+  per_question_script_candidates: [问题{x}求解/q{x}_plot.py, 问题{x}求解/q{x}_plot.m]
+  exactly_one_production_script_per_question_by_default: true
+  handoff_alternative: matlab_figure_handoff.json/yaml（兼容名称；不代表固定MATLAB后端）
   provenance_record: null
   mtime_role: 仅作辅助警告
-  default_output: 每问交付同目录qX_plot.m；project_level另交付数据预处理/data_process.m；图窗由用户人工检查和按需导出
+  default_output: 每问由Backend Selection交付同目录qX_plot.py或qX_plot.m中的一个；project_level另交付data_process_plot.py或data_process.m中的一个；图窗/预览由用户人工检查和按需导出
 mechanism_drawio_contract:
   authority: modules/04_figure_evidence.md#Mechanism-Diagram-Backend-Selection-Gate
   activation: 用户明确需要draw.io/可编辑机理图，且后端选择门确认属于非数据驱动题目专属关系图
@@ -593,21 +617,21 @@ mechanism_drawio_contract:
   per_question_five_file_layout_unchanged: true
 ownership:
   Python_preprocessing: 仅preprocessing_decision=project_level时生成；负责共享原始数据的公共审计与已批准处理、论文方法/验证证据和绘图底层数据并输出统一工作簿，不求解小问核心模型。
-  MATLAB_preprocessing: 仅project_level时由data_process.m读取统一工作簿绘制处理前后与验证证据；不重新清洗、插值、滤波、重采样或估计参数。
-  Python: 每问维护同目录两个题目专属脚本；not_needed/question_local可读取原始数据，project_level读取统一工作簿。问题X求解.py负责主求解、当前主计算最低数值有效性检查及不改变当前计算世界的高价值状态/过程/结构Evidence Capture；问题X结果深化分析.py只在主工作簿accepted后负责敏感性、稳健性、边界、替代方法/结构等独立深化分析并保留细粒度底层证据。
-  MATLAB: 同目录qX_plot.m精确读取本问两个标准工作簿，并仅在图确实需要底层数据时按preprocessing_decision读取原始数据或统一预处理工作簿；按modules/04_figure_evidence.md执行Scientific Evidence Visualization、组合编码和全局—局部组织，不重新计算核心结果，默认不自动导出图片
-  other_figure_tools: GeoGebra、PPT、draw.io、SVG、TikZ可用于非数据驱动机理图；draw.io仅按mechanism_drawio_contract选择，工作簿驱动结果图继续归MATLAB
+  Figure_preprocessing: 仅project_level时由Backend Selection选定data_process_plot.py或data_process.m读取统一工作簿绘制处理前后与验证证据；无论后端都不得重新清洗、插值、滤波、重采样、估计参数、拟合或预测。
+  Python: 每问维护同目录两个题目专属数值脚本；not_needed/question_local可读取原始数据，project_level读取统一工作簿。问题X求解.py负责主求解、当前主计算最低数值有效性检查及不改变当前计算世界的高价值状态/过程/结构Evidence Capture；问题X结果深化分析.py只在主工作簿accepted后负责敏感性、稳健性、边界、替代方法/结构等独立深化分析并保留细粒度底层证据。
+  Figure_rendering: 每问由Backend Selection在qX_plot.py/qX_plot.m中选定一个正式生产脚本；精确读取本问标准工作簿，并仅在图确实需要底层数据时按preprocessing_decision读取当前允许的数据事实源；按modules/04_figure_evidence.md执行Scientific Evidence Visualization、Line Style、Clarity、Aesthetic与Final-size QA，不重新计算核心结果，默认不自动导出图片。
+  other_figure_tools: GeoGebra、PPT、draw.io、SVG、TikZ可用于非数据驱动机理图；draw.io仅按mechanism_drawio_contract选择；工作簿驱动结果图在Python/MATLAB中自适应选择。
 filenames:
   preprocessing_script: 数据预处理/数据预处理.py（仅project_level）
   preprocessing_workbook: 数据预处理/数据预处理结果.xlsx（仅project_level）
-  preprocessing_matlab_script: 数据预处理/data_process.m（仅project_level，图表阶段生成）
+  preprocessing_figure_scripts: 数据预处理/data_process_plot.py 或 数据预处理/data_process.m（仅project_level，图表阶段二选一）
   model_paper_framework: 模型论文框架.md
   project_state: state/project_state.yaml
   sync_report: sync_report.yaml
   python_scripts:
   - 问题X求解/问题X求解.py
   - 问题X求解/问题X结果深化分析.py
-  matlab_scripts: 数据预处理/data_process.m（project_level）以及问题X求解/q1_plot.m、q2_plot.m等ASCII固定名称
+  figure_scripts: 问题X求解/q1_plot.py或q1_plot.m、q2_plot.py或q2_plot.m等ASCII固定stem；每问默认恰好一个正式生产脚本
   workbooks: 中文固定名称
   worksheets: 中文描述性名称，最长31字符
   figures: ASCII英文或拼音；预处理图基名data_process或data_process_<evidence>
@@ -625,14 +649,16 @@ rules:
 - 预处理判定必须以当前附件的缺失结构、单位/主键/时间/坐标一致性、有效性、重复身份、采样覆盖、测量质量、模型输入要求和时间因果/信息泄漏风险为依据；不得从题型或过去赛题套固定处理模板。
 - 两个及以上小问共享同一原始数据，只触发统一口径审计，不自动触发项目级预处理。
 - preprocessing_decision=not_needed时不创建数据预处理目录，各问可直接读取原始数据并保留必要检查。
-- preprocessing_decision=question_local时不创建全局预处理目录，本问可执行有数学来源的局部变换；实质变换必须写公式/定义、参数依据和验证，必要图由qX_plot.m承接。
-- preprocessing_decision=project_level时才创建数据预处理目录；最终默认恰好包含数据预处理.py、数据预处理结果.xlsx和data_process.m；一个总表指一个统一工作簿，可含多个对象语义明确的工作表。
-- 只有project_level时，共享原始数据在统一工作簿验收后只允许数据预处理.py作为公共处理入口，依赖小问主求解、深化分析和数据型MATLAB流程不得再次直接读取对应共享原始数据。
+- preprocessing_decision=question_local时不创建全局预处理目录，本问可执行有数学来源的局部变换；实质变换必须写公式/定义、参数依据和验证，必要图由本问选定qX_plot.py/qX_plot.m承接。
+- preprocessing_decision=project_level时才创建数据预处理目录；最终默认恰好包含数据预处理.py、数据预处理结果.xlsx和一个选定Figure脚本(data_process_plot.py或data_process.m)；一个总表指一个统一工作簿，可含多个对象语义明确的工作表。
+- 只有project_level时，共享原始数据在统一工作簿验收后只允许数据预处理.py作为公共处理入口，依赖小问主求解、深化分析和数据型Figure流程不得再次直接读取对应共享原始数据。
 - project_level统一工作簿质量门未通过时必须停在awaiting_user_preprocessing；其他两种decision不得因为缺少统一工作簿而阻塞。
 - 缺失填补、预测填补、异常删除、插值、平滑、滤波、去趋势、归一化、标准化和重采样等操作必须有数据/机理/模型必要性证据；有缺失不等于必须插值，赛题本身要求的预测结果不得包装为预处理。
 - 只要实际预处理参与后续模型，论文必须闭合问题证据、数学公式/确定性映射、参数依据、方法验证、处理前后证据、图和模型接口；形式证明仅在数学上适用时使用。
-- project_level进入figure_evidence时必须生成data_process.m，并至少形成一张预处理必要性或有效性证据图；MATLAB不得重新执行预处理。
-- 新项目每问只创建一个问题X求解目录，默认最终恰好包含两个Python脚本、两个Excel工作簿和一个qX_plot.m。
+- project_level进入figure_evidence时必须生成一个data_process_plot.py或data_process.m，并至少形成一张预处理必要性或有效性证据图；所选Figure脚本不得重新执行预处理。
+- 新项目每问只创建一个问题X求解目录，默认最终恰好包含两个数值Python脚本、两个Excel工作簿和一个由Backend Selection选定的qX_plot.py或qX_plot.m。
+- Figure渲染不强制MATLAB，也不强制Python；必须根据当前Evidence Structure、line/contour/direct label清晰度、前景背景对比、typography、layout、scientific color、Final-size与export fidelity选择综合更好的后端；后端切换不得改变accepted数据、模型结论、统计口径或Main-text Admission。
+- Figure在正式入文前必须通过Clarity & Visibility Review和Aesthetic Review；关键等值线需要时可稀疏标数值，黑色等值线在深色背景看不清时必须允许换成协调的高对比颜色；清楚但刺眼、漂亮但看不清都不得通过。
 - Problem Contract、preprocessing_decision、语义闭环与复杂度复审先于正式模型和代码交付，不能用运行成功或结果合理替代语义正确性。
 - v7.16模型设计与写作必须区分Model/Solver/Validator；优化题正文和摘要明确标准模型类型、决策对象、objective及约束后再介绍solver，题目专属模型名不能遮蔽标准数学类型。
 - v7.16 solver首次使用需给出本题结构理由，跨问沿用/更换说明继承或结构增量；另用算法只有存在真实artifact和baseline/alternative/validator角色时进入正文。
@@ -640,12 +666,12 @@ rules:
 - v7.16摘要和正文强主张按PROVEN/VERIFIED_NUMERIC/COMPARATIVE/OBSERVED/HEURISTIC校准；有限数值验证、多启动或独立算法未发现更优不得升级成全局最优证明。
 - v7.14新生成主求解在代码前冻结PQS；问题X求解.py只实现当前主计算最低数值有效性检查，主工作簿返回后由独立数值证据校验器复核，不能只相信自报Boolean。
 - v7.15主求解在不改变当前计算世界的前提下同步保留解释/绘图/验证有价值的current-run状态、过程与结构证据；改变参数、场景、seed、算法、模型或验证窗口后的新运行仍只属于accepted后的结果深化分析。
-- v7.15正式核心Figure先执行Scientific Figure Synthesis与Basic-form Challenge；同一证据空间存在互补信息时优先考虑组合编码，并在论文级执行Portfolio Scientific Quality Review；详细配色和图型规则只由modules/04_figure_evidence.md定义。
+- v7.15正式核心Figure先执行Scientific Figure Synthesis与Basic-form Challenge；同一证据空间存在互补信息时优先考虑组合编码，并在论文级执行Portfolio Scientific Quality Review；详细配色、线条、清晰度、审美和后端选择规则只由modules/04_figure_evidence.md定义。
 - 主工作簿accepted后冻结问题X求解.py，并单独生成问题X结果深化分析.py；参数敏感性、压力场景、替代算法/结构、多seed稳健性、异质性、误差分解和广义外样本稳定性只属于该后置阶段，不得为深化分析覆盖改写主求解脚本。
 - 默认不生成独立完整运行配置、运行说明、code_delivery_report、user_execution_validation_report、semantic_governance_report、figure_evidence或图表子目录。
-- 实际生成的项目级预处理脚本和两个正式小问Python脚本都必须通过静态工程质量检查且不得由助手执行；校验结果在聊天或标准输出中返回，不额外落盘。
+- 实际生成的项目级预处理脚本和两个正式小问数值Python脚本都必须通过静态工程质量检查且不得由助手执行；Figure生产脚本接受对应后端的静态边界审查；校验结果在聊天或标准输出中返回，不额外落盘。
 - 用户返回的适用预处理工作簿和小问工作簿均必须先通过对应质量门；代码交付本身不得把状态提升为solved或analyzed。
-- 同步器只做发现、校验、哈希和stale传播，不替代语义治理、条件式预处理质量门、主求解质量门、主数值证据复核与结果深化分析。
+- 同步器只做发现、校验、哈希和stale传播，不替代语义治理、条件式预处理质量门、主求解质量门、主数值证据复核、结果深化分析、Clarity/Aesthetic人工视觉审查。
 - v7.10正式LaTeX交付必须形成current的latex_audit_report + v3 compile_report + PDF证明链；缺日志、审计过期、profile变化或源码/框架变化均不得继续复用旧passed状态。
 - v7.10提交包显式分为official/reproducibility；official必须来自已核验当届allowlist，任一包都必须由submission_manifest和当前项目哈希验证后才可视为validated。
 - v7.8算法流程呈现按not_needed/stepwise/pseudocode自适应；只有真实多阶段或控制流有信息价值时单列，并由Algorithm Trace连接模型/命题、Python实现与工作簿结果。

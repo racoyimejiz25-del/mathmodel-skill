@@ -1,6 +1,6 @@
 # HSK Active Template Index
 
-当前 Skill 版本：9.1.0
+当前 Skill 版本：9.2.0
 
 本索引仅覆盖活动 Skill；历史文件通过 `legacy/README.md` 追溯。
 
@@ -17,9 +17,13 @@
 - `templates/code/starter/prediction.py`
 - `templates/code/starter/simulation.py`
 - `templates/figure/chart_selection.md`
+- `templates/figure/clarity_visibility_review.md`
+- `templates/figure/cumcm_visual_quality_gate.md`
 - `templates/figure/figure_enhancement_patterns.md`
 - `templates/figure/figure_paper_closure.md`
 - `templates/figure/figure_plan.md`
+- `templates/figure/line_style_engine.md`
+- `templates/figure/literature_figure_reference.md`
 - `templates/figure/mechanism_contract.md`
 - `templates/figure/mechanism_drawio_patterns.md`
 - `templates/figure/mechanism_drawio_spec.yaml`
@@ -27,8 +31,10 @@
 - `templates/figure/mechanism_practical_check.md`
 - `templates/figure/mechanism_qa.md`
 - `templates/figure/per_question_mechanism_plan.md`
+- `templates/figure/rendering_backend_selection.md`
 - `templates/figure/result_figure_contract.md`
 - `templates/figure/result_figure_qa.md`
+- `templates/figure/visual_mapping_contract.md`
 - `templates/latex/cumcm/cumcmthesis/.gitignore`
 - `templates/latex/cumcm/cumcmthesis/README.md`
 - `templates/latex/cumcm/cumcmthesis/cumcmthesis.cls`
